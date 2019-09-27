@@ -69,8 +69,8 @@ public:
         inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
         constant_pool_count = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
         std::printf("constant_pool_count: %u\n", constant_pool_count);
-        constant_pool = new std::vector<void *>(constant_pool_count);
-        for (int i = 0; i < constant_pool_count; i++){
+        constant_pool = new std::vector<void *>(constant_pool_count + 1);
+        for (int i = 1; i <= constant_pool_count; i++){
             uint8_t tag;
             inFile.read(reinterpret_cast<char *>(&tag), 1);
 
@@ -233,16 +233,16 @@ public:
     }
 
     void printUTFEntry(uint16_t constant_index){
-       std::cout << (*((CONSTANT_Utf8_info *)constant_pool->at(constant_index))).bytes;
+       std::printf("%s", (*((CONSTANT_Utf8_info *)constant_pool->at(constant_index))).bytes);
     }
     void printConstantPool(){
         std::cout << std::dec << "--------------------------" << std::endl;
         std::cout << "Constant Pool" << std::endl;
-        for (int i = 0; i < constant_pool_count - 1; i++){
+        for (int i = 1; i <= constant_pool_count - 1; i++){
             if (*((char*) constant_pool->at(i)) == CONSTANT_Class){
                 std::cout << "Entry " << i << ": Class" << std::endl;
                 (CONSTANT_Class_info *) constant_pool->at(i);
-                std::cout << "\t" << "Name Index is: " << (*((CONSTANT_Class_info *)constant_pool->at(i))).name_index << " [";
+                std::cout << "\t" << "NameAndType Index is: " << (*((CONSTANT_Class_info *)constant_pool->at(i))).name_index << " [";
                 printUTFEntry((*((CONSTANT_Class_info *)constant_pool->at(i))).name_index);
                 std::cout << "]" << std::endl;
             }
@@ -303,10 +303,10 @@ public:
                 std::cout << "]" << std::endl;
                 std::cout << "\t" << "NameAndTypeIndex : " <<
                           (*((CONSTANT_Fieldref_info *)constant_pool->at(i))).name_and_type_index;
-                std::cout << "\t\tName: ";
+                std::cout << "\n\t\tName: ";
                 printUTFEntry((*((CONSTANT_NameAndType_info *) constant_pool->at(nat_ndx))).name_index);
-                std::cout << "\n\t\tDescription: " << nat_ndx << std::endl;
-                printUTFEntry((*((CONSTANT_NameAndType_info *)constant_pool->at(nat_ndx - 1))).descriptor_index);
+                std::cout << "\n\t\tDescription: ";
+                printUTFEntry((*((CONSTANT_NameAndType_info *)constant_pool->at(nat_ndx))).descriptor_index);
                 std::cout << std::endl;
             }
 
@@ -314,29 +314,34 @@ public:
                 std::cout << "Entry " << i << ": MethodRef" << std::endl;
                 int class_ndx = (*((CONSTANT_Methodref_info *)constant_pool->at(i))).class_index;
                 int nat_ndx = (*((CONSTANT_Methodref_info *)constant_pool->at(i))).name_and_type_index;
-                std::cout << "\t" << "Method of class : " <<
+                std::cout << "\t" << "Method of Class : " <<
                           (*((CONSTANT_Methodref_info *)constant_pool->at(i))).class_index << " [";
                 printUTFEntry((*((CONSTANT_Class_info *)constant_pool->at(class_ndx))).name_index);
                 std::cout << "]" << std::endl;
-                std::cout << "" << "NameAndType Index : " <<
+                std::cout << "" << "\tNameAndType Index : " <<
                           (*((CONSTANT_Methodref_info *)constant_pool->at(i))).name_and_type_index;
-                std::cout << "\t\tName:";
+                std::cout << "\n\t\tName:";
                 printUTFEntry((*((CONSTANT_NameAndType_info *)constant_pool->at(nat_ndx))).name_index);
-                //std::cout << "\n\t\tDescription:";
-                //printUTFEntry((*((CONSTANT_NameAndType_info *)constant_pool->at(nat_ndx))).descriptor_index);
+                std::cout << "\n\t\tDescription: ";
+                printUTFEntry((*((CONSTANT_NameAndType_info *)constant_pool->at(nat_ndx))).descriptor_index);
                 std::cout << std::endl;
             }
 
             else if (*((char*) constant_pool->at(i)) == CONSTANT_InterfaceMethodref){
                 std::cout << "Entry " << i << ": InterfaceMethodRef" << std::endl;
+                int class_ndx = (*((CONSTANT_InterfaceMethodref_info *)constant_pool->at(i))).class_index;
+                int nat_ndx = (*((CONSTANT_InterfaceMethodref_info *)constant_pool->at(i))).name_and_type_index;
                 std::cout << "\t" << "Method of Interface: " <<
                           (*((CONSTANT_InterfaceMethodref_info *)constant_pool->at(i))).class_index << " [";
-                //printUTFEntry((*((CONSTANT_Fieldref_info *)constant_pool->at(i))).name_and_type_index);
+                printUTFEntry((*((CONSTANT_Fieldref_info *)constant_pool->at(i))).name_and_type_index);
                 std::cout << "]" << std::endl;
-                std::cout << "\t" << "Name Index : " <<
+                std::cout <<  "\tNameAndType Index : " <<
                           (*((CONSTANT_InterfaceMethodref_info *)constant_pool->at(i))).name_and_type_index << " [";
-                //printUTFEntry((*((CONSTANT_Fieldref_info *)constant_pool->at(i))).name_and_type_index);
-                std::cout << "]" << std::endl;
+                std::cout << "\n\t\tName:";
+                printUTFEntry((*((CONSTANT_NameAndType_info *)constant_pool->at(nat_ndx))).name_index);
+                std::cout << "\n\t\tDescription: ";
+                printUTFEntry((*((CONSTANT_NameAndType_info *)constant_pool->at(nat_ndx))).descriptor_index);
+                std::cout << std::endl;
             }
 
             else if (*((char*) constant_pool->at(i)) == CONSTANT_NameAndType){
@@ -389,7 +394,7 @@ public:
             else if (*((char*) constant_pool->at(i)) == CONSTANT_Utf8){
                 std::cout << "Entry " << i << ": Utf-8" << std::endl;
                 std::cout << "\t" << "Length is: " << (*((CONSTANT_Utf8_info *)constant_pool->at(i))).length << std::endl;
-                std::cout << "\t" << "String is is: ";
+                std::cout << "\t" << "String is: ";
                 printUTFEntry(i);
                 std::cout << "\n";
             }
