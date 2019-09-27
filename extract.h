@@ -8,4 +8,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <string>
+#include <experimental/filesystem>
+#include "classFile.h"
 #endif //EXTRACTCLASS_EXTRACT_H
