@@ -7,30 +7,13 @@
 
 #include "extract.h"
 
-enum cPoolTag{
-    CONSTANT_Utf8                   = 1,
-    CONSTANT_Integer                = 3,
-    CONSTANT_Float                  = 4,
-    CONSTANT_Long                   = 5,
-    CONSTANT_Double                 = 6,
-    CONSTANT_Class                  = 7,
-    CONSTANT_String                 = 8,
-    CONSTANT_Fieldref               = 9,
-    CONSTANT_Methodref              = 10,
-    CONSTANT_InterfaceMethodref     = 11,
-    CONSTANT_NameAndType            = 12,
-    CONSTANT_MethodHandle           = 15,
-    CONSTANT_MethodType             = 16,
-    CONSTANT_InvokeDynamic          = 18
-};
-
 class classFile {
 public:
     int32_t magic_number;                   /* 4 bytes that should be 0xCAFEBABE or it compiled wrong       */
     uint16_t majorVersion;                   /* Supported by JVM if <minV>.0 <= version <= <majV>.<minV>     */
     uint16_t minorVersion;                   /* Supported by JVM if <minV>.0 <= version <= <majV>.<minV>     */
     uint16_t constant_pool_count;            /* Number of items in constant pool plus one                    */
-    char **constant_pool;                  /* Strings containing all constants, interfaces, and fields     */
+    std::vector<void *> constant_pool;                  /* Strings containing all constants, interfaces, and fields     */
     short access_flag;                    /* Mask determining the access properties of this class         */
     short this_class;                     /* Index of self CONSTANT_Class_info in constant pool           */
     short super_class;                    /* Index of superclass CONSTANT_Class_info or 0 if Object class */
@@ -72,11 +55,11 @@ public:
         inFile.read(reinterpret_cast<char *>(&fourByteBuffer), 4);
         if (!bigEndian) {
             majorVersion = (unsigned short) (fourByteBuffer >> 16);
-            minorVersion = (unsigned short) (fourByteBuffer & 65535); // versionInfo & 0000 0000 0000 0000 1111 1111 1111 1111
+            minorVersion = (unsigned short) (fourByteBuffer & 65535); // versionInfo & 0000 ... 0000 1111 1111 1111 1111
             majorVersion = swapEndian16(majorVersion);
             minorVersion = swapEndian16(minorVersion);
         } else {
-            majorVersion = (unsigned short) (fourByteBuffer & 65535); // versionInfo & 0000 0000 0000 0000 1111 1111 1111 1111
+            majorVersion = (unsigned short) (fourByteBuffer & 65535); // versionInfo & 0000 ... 0000 1111 1111 1111 1111
             minorVersion = (unsigned short) (fourByteBuffer >> 16);
         }
         std::printf("major version: %u\n", majorVersion);
@@ -84,10 +67,82 @@ public:
 
         /*                      Get Constant Pool                   */
         inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
-        std::printf("constant_pool_count: %u\n", twoByteBuffer);
-        twoByteBuffer = swapEndian16(twoByteBuffer);
-        std::printf("constant_pool_count: %u\n", twoByteBuffer);
+        constant_pool_count = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+        std::printf("constant_pool_count: %u\n", constant_pool_count);
+        for (int i = 0; i < constant_pool_count; i++){
+            uint8_t tag;
+            inFile.read(reinterpret_cast<char *>(&tag), 1);
+
+            switch(tag) {
+                case CONSTANT_Class:
+                    CONSTANT_Class_info * class_ptr = (CONSTANT_Class_info *)malloc(sizeof(struct CONSTANT_Class_info));
+                    class_ptr->tag=tag;
+                    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+                    class_ptr->name_index = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+                    constant_pool.push_back((void*) class_ptr);
+                    break;
+                case CONSTANT_Fieldref:
+                    CONSTANT_Fieldref_info * field_ptr = (CONSTANT_Fieldref_info *)malloc(sizeof(struct CONSTANT_Fieldref_info));
+                    field_ptr->tag=tag;
+                    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+                    field_ptr->class_index = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+                    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+                    field_ptr->name_and_type_index = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+                    constant_pool.push_back((void*) field_ptr);
+                    break;
+                case CONSTANT_Float:
+
+                    break;
+                case CONSTANT_Integer:
+
+                    break;
+                case CONSTANT_InterfaceMethodref:
+                    CONSTANT_InterfaceMethodref_info * interfaceMethod_ptr = (CONSTANT_InterfaceMethodref_info *)malloc(sizeof(struct CONSTANT_InterfaceMethodref_info));
+                    interfaceMethod_ptr->tag=tag;
+                    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+                    interfaceMethod_ptr->class_index = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+                    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+                    interfaceMethod_ptr->name_and_type_index = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+                    constant_pool.push_back((void*) interfaceMethod_ptr);
+                    break;
+                case CONSTANT_InvokeDynamic:
+
+                    break;
+                case CONSTANT_MethodHandle:
+
+                    break;
+                case CONSTANT_Methodref:
+                    CONSTANT_Methodref_info * method_ptr = (CONSTANT_Methodref_info *)malloc(sizeof(struct CONSTANT_Methodref_info));
+                    method_ptr->tag=tag;
+                    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+                    method_ptr->class_index = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+                    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+                    method_ptr->name_and_type_index = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+                    constant_pool.push_back((void*) method_ptr);
+                    break;
+                case CONSTANT_MethodType:
+
+                    break;
+                case CONSTANT_NameAndType:
+
+                    break;
+                case CONSTANT_String:
+
+                    break;
+                case CONSTANT_Utf8:
+
+                    break;
+                case CONSTANT_Long:
+
+                    break;
+                case CONSTANT_Double:
+
+                    break;
+
+            }
+        }
     }
+
 
     uint16_t swapEndian16(uint16_t littleEndianInt){
         return (littleEndianInt >> 8 | littleEndianInt << 8);
