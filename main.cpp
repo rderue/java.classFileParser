@@ -1,4 +1,3 @@
-#include <iostream>
 #include "extract.h"
 
 const char * usage = "This tool extracts the fields of a Java .class file. In order to use it, you must enter: \n"

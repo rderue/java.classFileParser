@@ -10,5 +10,7 @@
 #include <fstream>
 #include <string>
 #include <experimental/filesystem>
+#include <cstdint>
+#include "cPoolTagTypes.h"
 #include "classFile.h"
 #endif //EXTRACTCLASS_EXTRACT_H
