@@ -105,7 +105,7 @@ struct CONSTANT_Double_info {
 
 struct CONSTANT_NameAndType_info {
     uint8_t tag;
-    uint16_t index;
+    uint16_t name_index;
     uint16_t descriptor_index;
 };
 
@@ -119,7 +119,7 @@ struct CONSTANT_NameAndType_info {
 struct CONSTANT_Utf8_info {
     uint8_t tag;
     uint16_t length;
-    uint8_t bytes[];
+    uint8_t * bytes;
 };
 /**
 * tag: tag must correspond with enum
@@ -148,7 +148,7 @@ struct CONSTANT_MethodType_info {
  * bootstrap_method_attr_index: Bootstrap_methods array index
  * name_and_type_index: Constant pool index containing a Constant_NameAndType_info struct with method name & descriptor
  */
-struct CONSTANT_InvokeDynamic_Info {
+struct CONSTANT_InvokeDynamic_info {
     uint8_t tag;
     uint16_t bootstrap_method_attr_index;
     uint16_t name_and_type_index;

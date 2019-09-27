@@ -28,6 +28,7 @@ public:
     bool bigEndian;                      /* True if machine is bigEndian, false otherwise                */
 
     classFile(char *fileName) {
+        uint8_t  oneByteBuffer;
         uint16_t twoByteBuffer;
         uint32_t fourByteBuffer;
 
@@ -73,16 +74,33 @@ public:
             uint8_t tag;
             inFile.read(reinterpret_cast<char *>(&tag), 1);
 
+            /*  Declare all necessary variables before the switch statement */
+
+            CONSTANT_Class_info * class_ptr;
+            CONSTANT_Fieldref_info * field_ptr;
+            CONSTANT_Float_info * float_ptr;
+            CONSTANT_Integer_info * int_ptr;
+            CONSTANT_InterfaceMethodref_info * interfaceMethod_ptr;
+            CONSTANT_InvokeDynamic_info * invdyn_ptr;
+            CONSTANT_MethodHandle_info * methodhdl_ptr;
+            CONSTANT_Methodref_info * method_ptr;
+            CONSTANT_MethodType_info * method_type_ptr;
+            CONSTANT_NameAndType_info * nat_ptr;
+            CONSTANT_String_info * str_ptr;
+            CONSTANT_Utf8_info * utf_ptr;
+            CONSTANT_Long_info * long_ptr;
+            CONSTANT_Double_info * dub_ptr;
+
             switch(tag) {
                 case CONSTANT_Class:
-                    CONSTANT_Class_info * class_ptr = (CONSTANT_Class_info *)malloc(sizeof(struct CONSTANT_Class_info));
+                    class_ptr = (CONSTANT_Class_info *)malloc(sizeof(struct CONSTANT_Class_info));
                     class_ptr->tag=tag;
                     inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
                     class_ptr->name_index = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
                     constant_pool.push_back((void*) class_ptr);
                     break;
                 case CONSTANT_Fieldref:
-                    CONSTANT_Fieldref_info * field_ptr = (CONSTANT_Fieldref_info *)malloc(sizeof(struct CONSTANT_Fieldref_info));
+                    field_ptr = (CONSTANT_Fieldref_info *)malloc(sizeof(struct CONSTANT_Fieldref_info));
                     field_ptr->tag=tag;
                     inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
                     field_ptr->class_index = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
@@ -91,13 +109,21 @@ public:
                     constant_pool.push_back((void*) field_ptr);
                     break;
                 case CONSTANT_Float:
-
+                    float_ptr = (CONSTANT_Float_info *)malloc(sizeof(struct CONSTANT_Float_info));
+                    float_ptr->tag=tag;
+                    inFile.read(reinterpret_cast<char *>(&fourByteBuffer), 4);
+                    float_ptr->bytes = (bigEndian ? fourByteBuffer : __bswap_32(fourByteBuffer));
+                    constant_pool.push_back((void*) float_ptr);
                     break;
                 case CONSTANT_Integer:
-
+                    int_ptr = (CONSTANT_Integer_info *)malloc(sizeof(struct CONSTANT_Integer_info));
+                    int_ptr->tag=tag;
+                    inFile.read(reinterpret_cast<char *>(&fourByteBuffer), 4);
+                    int_ptr->bytes = (bigEndian ? fourByteBuffer : __bswap_32(fourByteBuffer));
+                    constant_pool.push_back((void*) int_ptr);
                     break;
                 case CONSTANT_InterfaceMethodref:
-                    CONSTANT_InterfaceMethodref_info * interfaceMethod_ptr = (CONSTANT_InterfaceMethodref_info *)malloc(sizeof(struct CONSTANT_InterfaceMethodref_info));
+                    interfaceMethod_ptr = (CONSTANT_InterfaceMethodref_info *)malloc(sizeof(struct CONSTANT_InterfaceMethodref_info));
                     interfaceMethod_ptr->tag=tag;
                     inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
                     interfaceMethod_ptr->class_index = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
@@ -106,13 +132,25 @@ public:
                     constant_pool.push_back((void*) interfaceMethod_ptr);
                     break;
                 case CONSTANT_InvokeDynamic:
-
+                    invdyn_ptr = (CONSTANT_InvokeDynamic_info *)malloc(sizeof(struct CONSTANT_InvokeDynamic_info));
+                    invdyn_ptr->tag=tag;
+                    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+                    invdyn_ptr->bootstrap_method_attr_index = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+                    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+                    invdyn_ptr->name_and_type_index = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+                    constant_pool.push_back((void*) invdyn_ptr);
                     break;
                 case CONSTANT_MethodHandle:
-
+                    methodhdl_ptr = (CONSTANT_MethodHandle_info *)malloc(sizeof(struct CONSTANT_MethodHandle_info));
+                    methodhdl_ptr->tag=tag;
+                    inFile.read(reinterpret_cast<char *>(&oneByteBuffer), 1);
+                    methodhdl_ptr->reference_kind = (oneByteBuffer);
+                    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+                    methodhdl_ptr->reference_index = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+                    constant_pool.push_back((void*) methodhdl_ptr);
                     break;
                 case CONSTANT_Methodref:
-                    CONSTANT_Methodref_info * method_ptr = (CONSTANT_Methodref_info *)malloc(sizeof(struct CONSTANT_Methodref_info));
+                    method_ptr = (CONSTANT_Methodref_info *)malloc(sizeof(struct CONSTANT_Methodref_info));
                     method_ptr->tag=tag;
                     inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
                     method_ptr->class_index = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
@@ -121,26 +159,65 @@ public:
                     constant_pool.push_back((void*) method_ptr);
                     break;
                 case CONSTANT_MethodType:
-
+                    method_type_ptr = (CONSTANT_MethodType_info *)malloc(sizeof(struct CONSTANT_MethodType_info));
+                    method_type_ptr->tag=tag;
+                    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+                    method_type_ptr->descriptor_index = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+                    constant_pool.push_back((void*) method_type_ptr);
                     break;
                 case CONSTANT_NameAndType:
-
+                    nat_ptr = (CONSTANT_NameAndType_info *)malloc(sizeof(struct CONSTANT_NameAndType_info));
+                    nat_ptr->tag=tag;
+                    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+                    nat_ptr->name_index = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+                    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+                    nat_ptr->descriptor_index = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+                    constant_pool.push_back((void*) nat_ptr);
                     break;
                 case CONSTANT_String:
+                    str_ptr = (CONSTANT_String_info *)malloc(sizeof(struct CONSTANT_String_info));
+                    str_ptr->tag=tag;
+                    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+                    str_ptr->string_index = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+                    constant_pool.push_back((void*) str_ptr);
 
                     break;
                 case CONSTANT_Utf8:
-
+                    utf_ptr = (CONSTANT_Utf8_info *)malloc(sizeof(struct CONSTANT_Utf8_info));
+                    utf_ptr->tag=tag;
+                    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+                    utf_ptr->length = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+                    utf_ptr->bytes = (uint8_t *) malloc(sizeof(uint8_t) * utf_ptr->length + 1);
+                    for (int i = 0; i < utf_ptr->length; i++){
+                        inFile.read(reinterpret_cast<char *>(&oneByteBuffer), 1);
+                        utf_ptr->bytes[i] = oneByteBuffer;
+                    }
+                    utf_ptr->bytes[i] = NULL;
+                    constant_pool.push_back((void*) utf_ptr);
                     break;
                 case CONSTANT_Long:
-
+                    long_ptr = (CONSTANT_Long_info *)malloc(sizeof(struct CONSTANT_Long_info));
+                    long_ptr->tag=tag;
+                    inFile.read(reinterpret_cast<char *>(&fourByteBuffer), 4);
+                    long_ptr->high_bytes = (bigEndian ? fourByteBuffer : __bswap_32(fourByteBuffer));
+                    inFile.read(reinterpret_cast<char *>(&fourByteBuffer), 4);
+                    long_ptr->low_bytes = (bigEndian ? fourByteBuffer : __bswap_32(fourByteBuffer));
+                    constant_pool.push_back((void*) long_ptr);
+                    constant_pool.push_back(NULL);
                     break;
                 case CONSTANT_Double:
-
+                    dub_ptr = (CONSTANT_Double_info *)malloc(sizeof(struct CONSTANT_Double_info));
+                    dub_ptr->tag=tag;
+                    inFile.read(reinterpret_cast<char *>(&fourByteBuffer), 4);
+                    dub_ptr->high_bytes = (bigEndian ? fourByteBuffer : __bswap_32(fourByteBuffer));
+                    inFile.read(reinterpret_cast<char *>(&fourByteBuffer), 4);
+                    dub_ptr->low_bytes = (bigEndian ? fourByteBuffer : __bswap_32(fourByteBuffer));
+                    constant_pool.push_back((void*) dub_ptr);
+                    constant_pool.push_back(NULL);
                     break;
-
             }
         }
+
     }
 
 
