@@ -13,4 +13,10 @@
 #include <cstdint>
 #include "cPoolTagTypes.h"
 #include "classFile.h"
+
+uint16_t swapEndian16(uint16_t littleEndianInt);
+
 #endif //EXTRACTCLASS_EXTRACT_H
+
+
+

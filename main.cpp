@@ -8,6 +8,6 @@ int main(int argc, char** argv) {
         std::cout << usage << std::endl;
         exit(1);
     }
-    classFile classfile = classFile(argv[1]);
+    ClassFile classfile = ClassFile(argv[1]);
     return 0;
 }
