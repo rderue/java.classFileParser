@@ -5,6 +5,8 @@
 
 #include "classFile.h"
 
+
+
 ClassFile::ClassFile(char *fileName) {
     uint8_t  oneByteBuffer;
     uint16_t twoByteBuffer;
@@ -208,7 +210,50 @@ ClassFile::ClassFile(char *fileName) {
         }
     }
     printConstantPool();
+    /*                      Get Access Flags                       */
+
+    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+    access_flag = twoByteBuffer;
+    //access_flag = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer)); todo figure out why this is little endian
+    printAccessTypes();
+    /*                      Get This Class                         */
+
+    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+    //this_class = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer)); todo figure out why this is little endian
+    this_class = twoByteBuffer;
+    printThisClass();
+    /*                      Get Super Class                         */
+
+    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+    //super_class = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer)); todo figure out why this is little endian
+    super_class = twoByteBuffer;
+    printSuperClass();
+    /*                      Get Fields Count                         */
+
+    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+    fields_count = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+
+    /*                      Get Fields[]                         */
+    //TODO: Implement Fields
+
+    /*                      Get Methods Count                         */
+
+    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+    methods_count = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+
+    /*                      Get Methods[]                         */
+    //TODO: Implement Methods
+
+    /*                      Get Attributes Count                         */
+
+    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+    methods_count = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer));
+
+    /*                      Get Attributes[]                         */
+    //TODO: Implement Methods
 }
+
+
 
 uint16_t swapEndian16(uint16_t littleEndianInt){
     return (littleEndianInt >> 8 | littleEndianInt << 8);

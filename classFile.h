@@ -7,6 +7,17 @@
 
 #include "extract.h"
 
+enum access_mask{
+    ACC_PUBLIC              = 0x0001,       /* Declared Public. May be accessed outside its package         */
+    ACC_FINAL               = 0X0010,       /* Declared final; No subclass is allowed                       */
+    ACC_SUPER               = 0X0020,       /* invokespecial function must treat this as a Super class      */
+    ACC_INTERFACE           = 0X0200,       /* Is an interface and not a class                              */
+    ACC_ABSTRACT            = 0X0400,       /* Declared Abstract so it cannot be instantiated               */
+    ACC_SYNTHETIC           = 0X1000,       /* Declared synthetic so it is not present in source code       */
+    ACC_ANNOTATION          = 0X2000,       /* Is an annotation type                                        */
+    ACC_ENUM                = 0X4000        /* Is an enum type                                              */
+};
+
 class ClassFile {
 public:
     int32_t magic_number;                    /* 4 bytes that should be 0xCAFEBABE or it compiled wrong       */
@@ -28,6 +39,59 @@ public:
     bool bigEndian;                          /* True if machine is bigEndian, false otherwise                */
 
     ClassFile(char *fileName);
+
+    void printAccessTypes(){
+        std::cout << "-------------------------------------\nAccess Flags:\n\t";
+        if ((ClassFile::access_flag & ACC_PUBLIC) == ACC_PUBLIC){
+            std::cout << "Public ";
+        }
+
+        if ((ClassFile::access_flag & ACC_FINAL) == ACC_FINAL){
+            std::cout << "Final ";
+        }
+
+        if ((ClassFile::access_flag & ACC_SUPER) == ACC_SUPER){
+            std::cout << "Super ";
+        }
+
+        if ((ClassFile::access_flag & ACC_INTERFACE) == ACC_INTERFACE){
+            std::cout << "Interface ";
+        }
+
+        if ((ClassFile::access_flag & ACC_ABSTRACT) == ACC_ABSTRACT){
+            std::cout << "Abstract ";
+        }
+
+        if ((ClassFile::access_flag & ACC_SYNTHETIC) == ACC_SYNTHETIC){
+            std::cout << "Synthetic";
+        }
+
+        if ((ClassFile::access_flag & ACC_ANNOTATION) == ACC_ANNOTATION){
+            std::cout << "Annotation";
+        }
+
+        if ((ClassFile::access_flag & ACC_ENUM) == ACC_ENUM){
+            std::cout << "Enum";
+        }
+        std::cout << std::endl;
+    }
+
+    void printThisClass(){
+            std::cout <<  "-------------------------------------\n" << "this: " << std::endl;
+            (CONSTANT_Class_info *) constant_pool->at(this_class);
+            std::cout << "\t";
+            printUTFEntry((*((CONSTANT_Class_info *)constant_pool->at(this_class))).name_index);
+            std::cout << std::endl;
+    }
+
+    void printSuperClass(){
+        if (super_class == 0) return;
+        std::cout <<  "-------------------------------------\n" << "super class: " << std::endl;
+        (CONSTANT_Class_info *) constant_pool->at(super_class);
+        std::cout << "\t";
+        printUTFEntry((*((CONSTANT_Class_info *)constant_pool->at(super_class))).name_index);
+        std::cout << std::endl;
+    }
 
     void printUTFEntry(uint16_t constant_index){
         std::printf("%s", (*((CONSTANT_Utf8_info *)constant_pool->at(constant_index))).bytes);
