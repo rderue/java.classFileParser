@@ -16,6 +16,7 @@
 #include "AccessMask.h"
 #include "Field.h"
 #include "Method.h"
+#include "attributeInfo.h"
 
 
 

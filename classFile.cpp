@@ -225,49 +225,98 @@ ClassFile::ClassFile(char *fileName) {
 
     methods = (struct Method *) malloc(methods_count * sizeof(struct Method));
     for (int i = 0; i < methods_count; i++){
-        struct Method current = *(methods + i);
+        struct Method * current = (methods + i);
         inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
         if (this->bigEndian){
             twoByteBuffer = swapEndian16(twoByteBuffer);
         }
-        current.access_flags = twoByteBuffer;
+        current->access_flags = twoByteBuffer;
         std::cout << "Has access flags:" << std::endl;
-        printMethodAccessMask(current.access_flags);
+        printMethodAccessMask(current->access_flags);
         inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
         if (this->bigEndian){
             twoByteBuffer = swapEndian16(twoByteBuffer);
         }
-        current.name_index = twoByteBuffer;
+        current->name_index = twoByteBuffer;
         std::cout << "\tMethod Name: ";
-        printUTFEntry(current.name_index);
+        printUTFEntry(current->name_index);
         inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
         if (this->bigEndian){
             twoByteBuffer = swapEndian16(twoByteBuffer);
         }
-        current.descriptor_index = twoByteBuffer;
+        current->descriptor_index = twoByteBuffer;
         std::cout << "\n\tDescriptor: ";
-        printUTFEntry(current.descriptor_index);
+        printUTFEntry(current->descriptor_index);
         inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
         if (this->bigEndian){
             twoByteBuffer = swapEndian16(twoByteBuffer);
         }
-        current.attributes_count = twoByteBuffer;
-        std::cout << "\n\tHas " << current.attributes_count << " attributes" << std::endl;
+        current->attributes_count = twoByteBuffer;
+        std::cout << "\n\tHas " << current->attributes_count << " attributes" << std::endl;
+        for (int i = 0; i < current->attributes_count; i++) {
+            twoByteBuffer = read2Brev(inFile);
+
+            /* Deal with attribute identification */
+            std::string attributeName = (char *) (*((CONSTANT_Utf8_info *) constant_pool->at(twoByteBuffer))).bytes;
+            if (attributeName == "Code"){
+                struct code_attribute * code_ptr = (struct code_attribute *)malloc(sizeof(struct code_attribute));
+                code_ptr->attribute_name_index = twoByteBuffer;
+                code_ptr->attribute_length = read4B(inFile);
+                code_ptr->max_stack = read2Brev(inFile);
+                code_ptr->max_locals = read2Brev(inFile);
+                code_ptr->code_length = read4B(inFile);
+                code_ptr->code = (uint8_t *) malloc(code_ptr->code_length);
+                for (int j = 0; j < code_ptr->code_length; j++){
+                    *(code_ptr->code + j) = read1B(inFile);
+                }
+                code_ptr->exception_table_length = read2Brev(inFile);
+                code_ptr->exceptionTable = (code_attribute::exception *) malloc(code_ptr->exception_table_length * sizeof(code_attribute::exception *));
+                for (int j = 0; j < code_ptr->exception_table_length; j++){
+                    (code_ptr->exceptionTable + j)->start_pc = read2Brev(inFile);
+                    (code_ptr->exceptionTable + j)->end_pc = read2Brev(inFile);
+                    (code_ptr->exceptionTable + j)->handler_pc = read2Brev(inFile);
+                    (code_ptr->exceptionTable + j)->catch_type = read2Brev(inFile);
+                }
+                code_ptr->attribute_length = read2Brev(inFile);
+                for (int j = 0; j < code_ptr->attribute_length; j++){
+                    read2Brev(inFile); //discard the name
+                    for (int k = 0; k < read4Brev(inFile); k++){
+                        read1B(inFile); //discard attribute length bytes
+                    }
+                }
+            }
+
+            else {
+                for (int j = 0; j < read4Brev(inFile); j++){
+                    read1B(inFile);
+                }
+            }
+        }
+
+        }
+    printClassFile();
 
     }
 
     /*                      Get Attributes Count                         */
-    attributes_count = read2B(inFile);
-    printClassFile();
 
     /*                      Get Attributes[]                         */
     //TODO: Implement Methods
-}
+
 
 uint8_t ClassFile::read1B(std::ifstream& inFile){
     uint8_t oneByteBuffer;
     inFile.read(reinterpret_cast<char *>(&oneByteBuffer), 1);
     return oneByteBuffer;
+}
+
+uint16_t ClassFile::read2Brev(std::ifstream& inFile){
+    uint16_t twoByteBuffer;
+    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+    if (this->bigEndian){
+        return swapEndian16(twoByteBuffer);
+    }
+    return twoByteBuffer;
 }
 
 uint16_t ClassFile::read2B(std::ifstream& inFile){
@@ -279,7 +328,16 @@ uint16_t ClassFile::read2B(std::ifstream& inFile){
     return twoByteBuffer;
 }
 
-uint32_t ClassFile::read4B(std::ifstream& inFile){
+uint32_t ClassFile::read4B(std::ifstream& inFile) {
+    uint32_t fourByteBuffer;
+    inFile.read(reinterpret_cast<char *>(&fourByteBuffer), 4);
+    if (!this->bigEndian) {
+        return __bswap_32(fourByteBuffer);
+    }
+    return fourByteBuffer;
+}
+
+uint32_t ClassFile::read4Brev(std::ifstream& inFile){
     uint32_t fourByteBuffer;
     inFile.read(reinterpret_cast<char *>(&fourByteBuffer), 4);
     if (!this->bigEndian){

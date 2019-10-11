@@ -5,7 +5,7 @@
 #ifndef EXTRACTCLASS_METHOD_H
 #define EXTRACTCLASS_METHOD_H
 
-
+#include "extract.h"
 #include <cstdint>
 
 enum method_access_mask{
@@ -28,7 +28,7 @@ struct Method {
     uint16_t name_index;
     uint16_t descriptor_index;
     uint16_t attributes_count;
-    //attribute_info *attributes;
+    std::vector<void *> attributes;
 };
 
 void printMethodAccessMask(uint16_t mask);

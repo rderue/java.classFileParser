@@ -35,7 +35,11 @@ public:
 
     uint16_t read2B(std::ifstream& inFile);
 
+    uint16_t read2Brev(std::ifstream& inFile);
+
     uint32_t read4B(std::ifstream& inFile);
+
+    uint32_t read4Brev(std::ifstream& inFile);
 
     void printThisClass();
 
@@ -52,6 +56,7 @@ public:
     void printClassFile();
 
     void printConstantPool();
+
 };
 
 
