@@ -12,7 +12,7 @@ struct Field {
     uint16_t    name_index;                     /* Index into the constant pool for the name    */
     uint16_t    descriptor_index;               /* Index into the constant pool for the desc.   */
     uint16_t    attribute_count;                /* Size of the attributes array                 */
-    attribute_info attributes[];
+   // attribute_info attributes[];
 };
 
 #endif //EXTRACTCLASS_FIELD_H

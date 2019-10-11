@@ -31,6 +31,12 @@ public:
 
     ClassFile(char *fileName);
 
+    u_int8_t read1B(std::ifstream& inFile);
+
+    uint16_t read2B(std::ifstream& inFile);
+
+    uint32_t read4B(std::ifstream& inFile);
+
     void printThisClass(){
             std::cout <<  "-------------------------------------\n" << "this: " << std::endl;
             (CONSTANT_Class_info *) constant_pool->at(this_class);
