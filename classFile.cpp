@@ -6,7 +6,6 @@
 
 ClassFile::ClassFile(char *fileName) {
     uint16_t twoByteBuffer;
-    uint32_t fourByteBuffer;
 
     /*                            Set up necessary paths to get .class File                    */
     std::string filePath = std::string(std::experimental::filesystem::current_path().parent_path());
@@ -25,11 +24,10 @@ ClassFile::ClassFile(char *fileName) {
     if (!bigEndian) {
         magic_number = __bswap_32(magic_number);
     }
-    std::cout << "magic number: " << std::hex << magic_number << std::endl;
 
     /*                      Get Version Number                  */
-    fourByteBuffer = read4B(inFile);
-    if (bigEndian) {
+    //fourByteBuffer = read4B(inFile);
+    /*if (bigEndian) {
         majorVersion = (unsigned short) (fourByteBuffer >> 16);
         minorVersion = (unsigned short) (fourByteBuffer & 65535); // versionInfo & 0000 ... 0000 1111 1111 1111 1111
         majorVersion = swapEndian16(majorVersion);
@@ -37,13 +35,12 @@ ClassFile::ClassFile(char *fileName) {
     } else {
         majorVersion = (unsigned short) (fourByteBuffer & 65535); // versionInfo & 0000 ... 0000 1111 1111 1111 1111
         minorVersion = (unsigned short) (fourByteBuffer >> 16);
-    }
-    std::printf("major version: %u\n", majorVersion);
-    std::printf("minor version: %u\n", minorVersion);
+    }*/
+    minorVersion = read2B(inFile);
+    majorVersion = read2B(inFile);
 
     /*                      Get Constant Pool                   */
     constant_pool_count = read2B(inFile);
-    std::printf("constant_pool_count: %u\n", constant_pool_count);
     constant_pool = new std::vector<void *>(constant_pool_count + 1);
     for (int i = 1; i <= constant_pool_count; i++){
         uint8_t tag = read1B(inFile);
@@ -153,11 +150,11 @@ ClassFile::ClassFile(char *fileName) {
                 utf_ptr = (CONSTANT_Utf8_info *)malloc(sizeof(struct CONSTANT_Utf8_info));
                 utf_ptr->tag=tag;
                 utf_ptr->length = read2B(inFile);
-                utf_ptr->bytes = (uint8_t *) malloc(sizeof(uint8_t) * utf_ptr->length + 1);
+                utf_ptr->bytes = (uint8_t *) malloc(sizeof(uint8_t) * (utf_ptr->length) + 1);
                 for (int i = 0; i < utf_ptr->length; i++){
                     utf_ptr->bytes[i] = read1B(inFile);
                 }
-                utf_ptr->bytes[i] = NULL;
+                utf_ptr->bytes[utf_ptr->length] = NULL;
                 constant_pool->at(i) = ((void*) utf_ptr);
                 break;
 
@@ -180,31 +177,36 @@ ClassFile::ClassFile(char *fileName) {
                 break;
         }
     }
-    printConstantPool();
     /*                      Get Access Flags                       */
 
     inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
     access_flag = twoByteBuffer;
     //access_flag = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer)); todo figure out why this is little endian
-    printAccessTypes(access_flag);
     /*                      Get This Class                         */
 
     inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
     //this_class = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer)); todo figure out why this is little endian
     this_class = twoByteBuffer;
-    printThisClass();
     /*                      Get Super Class                         */
 
     inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
     //super_class = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer)); todo figure out why this is little endian
     super_class = twoByteBuffer;
-    printSuperClass();
-    /*                      Get Fields Count                         */
+    /*                      Get Interfaces Count                         */
 
+    interfaces_count = read2B(inFile);
+
+    /*                      Get Interfaces[]                         */
+
+    interfaces = (uint16_t *) malloc(interfaces_count * sizeof(uint16_t));
+    for (int i = 0; i < interfaces_count; i++){
+        *(interfaces + i) = read2B(inFile);
+    }
+
+    /*                      Get Fields Count                         */
     fields_count = read2B(inFile);
 
     /*                      Get Fields[]                         */
-    //TODO: Implement Fields
 
     /*                      Get Methods Count                         */
 
@@ -215,6 +217,7 @@ ClassFile::ClassFile(char *fileName) {
 
     /*                      Get Attributes Count                         */
     attributes_count = read2B(inFile);
+    printClassFile();
 
     /*                      Get Attributes[]                         */
     //TODO: Implement Methods
@@ -244,6 +247,212 @@ uint32_t ClassFile::read4B(std::ifstream& inFile){
     return fourByteBuffer;
 }
 
+void ClassFile::printThisClass(){
+    std::cout <<  "-------------------------------------\n" << "this: " << std::endl;
+    (CONSTANT_Class_info *) constant_pool->at(this_class);
+    std::cout << "\t";
+    printUTFEntry((*((CONSTANT_Class_info *)constant_pool->at(this_class))).name_index);
+    std::cout << std::endl;
+}
+
+void ClassFile::printSuperClass(){
+    if (super_class == 0) return;
+    std::cout <<  "-------------------------------------\n" << "super class: " << std::endl;
+    (CONSTANT_Class_info *) constant_pool->at(super_class);
+    std::cout << "\t";
+    printUTFEntry((*((CONSTANT_Class_info *)constant_pool->at(super_class))).name_index);
+    std::cout << std::endl;
+}
+
+void ClassFile::printUTFEntry(uint16_t constant_index){
+    std::printf("%s", (*((CONSTANT_Utf8_info *)constant_pool->at(constant_index))).bytes);
+}
+
+void ClassFile::printInterfaces(){
+    std::cout << std::dec << "--------------------------" << std::endl;
+    std::cout << "interfaces_count: " << interfaces_count << std::endl;
+    std::cout << "interfaces:" << std::endl;
+    for (int i = 0; i < interfaces_count; i++){
+        std::cout << "\t" << constant_pool->at(*(interfaces + i));
+    }
+}
+
+
+void ClassFile::printConstantPool(){
+    std::cout << std::dec << "--------------------------" << std::endl;
+    std::cout << "Constant Pool" << std::endl;
+    for (int i = 1; i < constant_pool_count; i++){
+        if (*((char*) constant_pool->at(i)) == CONSTANT_Class){
+            std::cout << "Entry " << i << ": Class" << std::endl;
+            std::cout << "\t" << "NameAndType Index is: " << (*((CONSTANT_Class_info *)constant_pool->at(i))).name_index << " [";
+            printUTFEntry((*((CONSTANT_Class_info *)constant_pool->at(i))).name_index);
+            std::cout << "]" << std::endl;
+        }
+
+        else if (*((char*) constant_pool->at(i)) == CONSTANT_Integer){
+            std::cout << "Entry " << i << ": Integer" << std::endl;
+            (CONSTANT_Class_info *) constant_pool->at(i);
+            std::cout << "\t" << "Bytes are: " << (*((CONSTANT_Integer_info *)constant_pool->at(i))).bytes;
+            std::cout << "\n";
+        }
+
+        else if (*((char*) constant_pool->at(i)) == CONSTANT_Float){
+            std::cout << "Entry " << i << ": Float" << std::endl;
+            (CONSTANT_Float_info *) constant_pool->at(i);
+            std::printf("\tBytes are: %f", (float) (*((CONSTANT_Float_info *)constant_pool->at(i))).bytes);
+            std::cout << "\n";
+        }
+
+        else if (*((char*) constant_pool->at(i)) == CONSTANT_Double){
+            std::cout << "Entry " << i << ": Float" << std::endl;
+            (CONSTANT_Double_info *) constant_pool->at(i);
+            std::printf("\tMSB Bytes are: %X\n", (int) (*((CONSTANT_Double_info *)constant_pool->at(i++))).high_bytes);
+            std::printf("\tLSB Bytes are: %X", (int) (*((CONSTANT_Double_info *)constant_pool->at(i))).low_bytes);
+            uint64_t value = (*((CONSTANT_Double_info *)constant_pool->at(i))).high_bytes << 32 |
+                             (*((CONSTANT_Double_info *)constant_pool->at(i))).low_bytes;
+            std::printf("\tFloating Point is: %f", (double) value);
+            std::cout << "\n";
+        }
+
+        else if (*((char*) constant_pool->at(i)) == CONSTANT_Long){
+            std::cout << "Entry " << i << ": Long" << std::endl;
+            (CONSTANT_Long_info *) constant_pool->at(i);
+            std::printf("\tMSB Bytes are: %X\n", (int) (*((CONSTANT_Long_info *)constant_pool->at(i++))).high_bytes);
+            std::printf("\tLSB Bytes are: %X", (int) (*((CONSTANT_Long_info *)constant_pool->at(i))).low_bytes);
+            uint64_t value = (*((CONSTANT_Long_info *)constant_pool->at(i))).high_bytes << 32 |
+                             (*((CONSTANT_Long_info *)constant_pool->at(i))).low_bytes;
+            std::printf("\tFloating Point is: %f", (double) value);
+            std::cout << "\n";
+        }
+
+        else if (*((char*) constant_pool->at(i)) == CONSTANT_String) {
+            std::cout << "Entry " << i << ": Class" << std::endl;
+            (CONSTANT_String_info *) constant_pool->at(i);
+            std::cout << "\t" << "String Index is: "
+                      << (*((CONSTANT_String_info *) constant_pool->at(i))).string_index << " [";
+            printUTFEntry((*((CONSTANT_String_info *) constant_pool->at(i))).string_index);
+            std::cout << "]" << std::endl;
+        }
+
+        else if (*((char*) constant_pool->at(i)) == CONSTANT_Fieldref){
+            std::cout << "Entry " << i << ": Field" << std::endl;
+            int nat_ndx = (*((CONSTANT_Fieldref_info *) constant_pool->at(i))).name_and_type_index;
+            int class_ndx = (*((CONSTANT_Fieldref_info *)constant_pool->at(i))).class_index;
+            std::cout << "\t" << "Field of class : " <<
+                      (*((CONSTANT_Fieldref_info *)constant_pool->at(i))).class_index << " [";
+            printUTFEntry((*((CONSTANT_Class_info *)constant_pool->at(class_ndx))).name_index);
+            std::cout << "]" << std::endl;
+            std::cout << "\t" << "NameAndTypeIndex : " <<
+                      (*((CONSTANT_Fieldref_info *)constant_pool->at(i))).name_and_type_index;
+            std::cout << "\n\t\tName: ";
+            printUTFEntry((*((CONSTANT_NameAndType_info *) constant_pool->at(nat_ndx))).name_index);
+            std::cout << "\n\t\tDescription: ";
+            printUTFEntry((*((CONSTANT_NameAndType_info *)constant_pool->at(nat_ndx))).descriptor_index);
+            std::cout << std::endl;
+        }
+
+        else if (*((char*) constant_pool->at(i)) == CONSTANT_Methodref){
+            std::cout << "Entry " << i << ": MethodRef" << std::endl;
+            int class_ndx = (*((CONSTANT_Methodref_info *)constant_pool->at(i))).class_index;
+            int nat_ndx = (*((CONSTANT_Methodref_info *)constant_pool->at(i))).name_and_type_index;
+            std::cout << "\t" << "Method of Class : " <<
+                      (*((CONSTANT_Methodref_info *)constant_pool->at(i))).class_index << " [";
+            printUTFEntry((*((CONSTANT_Class_info *)constant_pool->at(class_ndx))).name_index);
+            std::cout << "]" << std::endl;
+            std::cout << "" << "\tNameAndType Index : " <<
+                      (*((CONSTANT_Methodref_info *)constant_pool->at(i))).name_and_type_index;
+            std::cout << "\n\t\tName:";
+            printUTFEntry((*((CONSTANT_NameAndType_info *)constant_pool->at(nat_ndx))).name_index);
+            std::cout << "\n\t\tDescription: ";
+            printUTFEntry((*((CONSTANT_NameAndType_info *)constant_pool->at(nat_ndx))).descriptor_index);
+            std::cout << std::endl;
+        }
+
+        else if (*((char*) constant_pool->at(i)) == CONSTANT_InterfaceMethodref){
+            std::cout << "Entry " << i << ": InterfaceMethodRef" << std::endl;
+            int class_ndx = (*((CONSTANT_InterfaceMethodref_info *)constant_pool->at(i))).class_index;
+            int nat_ndx = (*((CONSTANT_InterfaceMethodref_info *)constant_pool->at(i))).name_and_type_index;
+            std::cout << "\t" << "Method of Interface: " <<
+                      (*((CONSTANT_InterfaceMethodref_info *)constant_pool->at(i))).class_index << " [";
+            printUTFEntry((*((CONSTANT_Fieldref_info *)constant_pool->at(i))).name_and_type_index);
+            std::cout << "]" << std::endl;
+            std::cout <<  "\tNameAndType Index : " <<
+                      (*((CONSTANT_InterfaceMethodref_info *)constant_pool->at(i))).name_and_type_index << " [";
+            std::cout << "\n\t\tName:";
+            printUTFEntry((*((CONSTANT_NameAndType_info *)constant_pool->at(nat_ndx))).name_index);
+            std::cout << "\n\t\tDescription: ";
+            printUTFEntry((*((CONSTANT_NameAndType_info *)constant_pool->at(nat_ndx))).descriptor_index);
+            std::cout << std::endl;
+        }
+
+        else if (*((char*) constant_pool->at(i)) == CONSTANT_NameAndType){
+            std::cout << "Entry " << i << ": NameAndType" << std::endl;
+            std::cout << "\t" << "Name Index: " <<
+                      (*((CONSTANT_NameAndType_info *)constant_pool->at(i))).name_index << " [";
+            printUTFEntry((*((CONSTANT_NameAndType_info *)constant_pool->at(i))).name_index);
+            std::cout << "]" << std::endl;
+            std::cout << "\t" << "Descriptor Index : " <<
+                      (*((CONSTANT_NameAndType_info *)constant_pool->at(i))).descriptor_index<< " [";
+            printUTFEntry((*((CONSTANT_NameAndType_info *)constant_pool->at(i))).descriptor_index);
+            std::cout << "]" << std::endl;
+        }
+
+            //TODO implement reference kind and reference index
+        else if (*((char*) constant_pool->at(i)) == CONSTANT_MethodHandle){
+            std::cout << "Entry " << i << ": MethodHandle" << std::endl;
+            std::cout << "\t" << "Reference Index: " <<
+                      (*((CONSTANT_MethodHandle_info *)constant_pool->at(i))).reference_index << " [";
+            //printUTFEntry((*((CONSTANT_NameAndType_info *)constant_pool->at(i))).name_index);
+            std::cout << "Indirection of reference index not yet implemented]" << std::endl;
+            std::cout << "\t" << "Reference Kind: " <<
+                      (*((CONSTANT_MethodHandle_info *)constant_pool->at(i))).reference_kind<< " [";
+            //printUTFEntry((*((CONSTANT_NameAndType_info *)constant_pool->at(i))).descriptor_index);
+            std::cout << "Description of reference kind not yet implemented]" << std::endl;
+        }
+
+        else if (*((char*) constant_pool->at(i)) == CONSTANT_MethodType) {
+            std::cout << "Entry " << i << ": MethodType" << std::endl;
+            std::cout << "\t" << "Descriptor Index: " <<
+                      (*((CONSTANT_MethodType_info *) constant_pool->at(i))).descriptor_index << " [";
+            printUTFEntry((*((CONSTANT_MethodType_info *) constant_pool->at(i))).descriptor_index);
+            std::cout << "]" << std::endl;
+        }
+
+        else if (*((char*) constant_pool->at(i)) == CONSTANT_InvokeDynamic) {
+            std::cout << "Entry " << i << ": InvokeDynamic" << std::endl;
+            int nat_ndx = (*((CONSTANT_InvokeDynamic_info *) constant_pool->at(i))).name_and_type_index;
+            std::cout << "\t" << "Name and Type Index: " <<
+                      (*((CONSTANT_InvokeDynamic_info *) constant_pool->at(i))).name_and_type_index << " [";
+            printUTFEntry((*((CONSTANT_InvokeDynamic_info *) constant_pool->at(i))).name_and_type_index);
+            std::cout << "]" << std::endl;
+            std::cout << "\t\t << Name: ";
+            printUTFEntry((*((CONSTANT_NameAndType_info *) constant_pool->at(nat_ndx))).name_index);
+            std::cout << "\t\t << Description: ";
+            printUTFEntry((*((CONSTANT_NameAndType_info *) constant_pool->at(nat_ndx))).descriptor_index);
+
+        }
+
+        else if (*((char*) constant_pool->at(i)) == CONSTANT_Utf8){
+            std::cout << "Entry " << i << ": Utf-8" << std::endl;
+            std::cout << "\t" << "Length is: " << (*((CONSTANT_Utf8_info *)constant_pool->at(i))).length << std::endl;
+            std::cout << "\t" << "String is: ";
+            printUTFEntry(i);
+            std::cout << "\n";
+        }
+    }
+}
+
+void ClassFile::printClassFile(){
+    std::cout << "magic number: " << std::hex << magic_number << std::endl;
+    std::printf("major version: %u\n", majorVersion);
+    std::printf("minor version: %u\n", minorVersion);
+    std::printf("constant_pool_count: %u\n", constant_pool_count);
+    printConstantPool();
+    printAccessTypes(access_flag);
+    printThisClass();
+    printSuperClass();
+    printInterfaces();
+}
 uint16_t swapEndian16(uint16_t littleEndianInt){
     return (littleEndianInt >> 8 | littleEndianInt << 8);
 }

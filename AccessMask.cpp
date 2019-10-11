@@ -5,7 +5,7 @@
 #include "AccessMask.h"
 #include "extract.h"
 
-void printAccessTypes(uint16_t mask){
+void printAccessTypes(u_int16_t mask){
     std::cout << "-------------------------------------\nAccess Flags:\n\t";
     if ((mask & ACC_PUBLIC) == ACC_PUBLIC){
         std::cout << "Public ";
