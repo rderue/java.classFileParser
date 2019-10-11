@@ -209,17 +209,52 @@ ClassFile::ClassFile(char *fileName) {
     /*                      Get Fields[]                         */
     fields = (struct Field *) malloc(sizeof(struct Field) * fields_count);
     for (int i = 0; i < fields_count; i++){
-        Field currentField = *(fields + i);
+        struct Field currentField = *(fields + i);
         currentField.access_flags = read2B(inFile);
         currentField.descriptor_index = read2B(inFile);
         currentField.attribute_count = read2B(inFile);
     }
     /*                      Get Methods Count                         */
-
-    methods_count = read2B(inFile);
+    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+    if (this->bigEndian){
+        twoByteBuffer = swapEndian16(twoByteBuffer);
+    }
+    methods_count = twoByteBuffer;
 
     /*                      Get Methods[]                         */
-    //TODO: Implement Methods
+
+    methods = (struct Method *) malloc(methods_count * sizeof(struct Method));
+    for (int i = 0; i < methods_count; i++){
+        struct Method current = *(methods + i);
+        inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+        if (this->bigEndian){
+            twoByteBuffer = swapEndian16(twoByteBuffer);
+        }
+        current.access_flags = twoByteBuffer;
+        std::cout << "Has access flags:" << std::endl;
+        printMethodAccessMask(current.access_flags);
+        inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+        if (this->bigEndian){
+            twoByteBuffer = swapEndian16(twoByteBuffer);
+        }
+        current.name_index = twoByteBuffer;
+        std::cout << "\tMethod Name: ";
+        printUTFEntry(current.name_index);
+        inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+        if (this->bigEndian){
+            twoByteBuffer = swapEndian16(twoByteBuffer);
+        }
+        current.descriptor_index = twoByteBuffer;
+        std::cout << "\n\tDescriptor: ";
+        printUTFEntry(current.descriptor_index);
+        inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
+        if (this->bigEndian){
+            twoByteBuffer = swapEndian16(twoByteBuffer);
+        }
+        current.attributes_count = twoByteBuffer;
+        std::cout << "\n\tHas " << current.attributes_count << " attributes" << std::endl;
+
+    }
 
     /*                      Get Attributes Count                         */
     attributes_count = read2B(inFile);
@@ -449,8 +484,8 @@ void ClassFile::printInterfaces(){
 
 void ClassFile::printFields(){
     std::cout << std::dec << "--------------------------" << std::endl;
-    std::cout << "fields_count: " << fields_count << std::endl;
-    std::cout << "fields:" << std::endl;
+    std::cout << "Fields Count: " << fields_count << std::endl;
+    std::cout << "Fields:" << std::endl;
     for (int i = 0; i < fields_count; i++){
         struct Field current = *(fields + i);
         std::cout << "\tField Name: ";
@@ -460,6 +495,22 @@ void ClassFile::printFields(){
         std::cout << "Has access flags:" << std::endl;
         printAccessTypes(current.access_flags);
         std::cout << "\n\tHas " << current.attribute_count << " attributes" << std::endl;
+    }
+}
+
+void ClassFile::printMethods(){
+    std::cout << std::dec << "--------------------------" << std::endl;
+    std::cout << "Methods Count: " << methods_count << std::endl;
+    std::cout << "Methods:" << std::endl;
+    for (int i = 0; i < methods_count; i++) {
+        struct Method current = *(methods + i);
+        std::cout << "\tMethod Name: ";
+        printUTFEntry(current.name_index);
+        std::cout << "\n\tDescriptor: ";
+        printUTFEntry(current.descriptor_index);
+        std::cout << "Has access flags:" << std::endl;
+        printAccessTypes(current.access_flags);
+        std::cout << "\n\tHas " << current.attributes_count << " attributes" << std::endl;
     }
 }
 
@@ -474,6 +525,7 @@ void ClassFile::printClassFile(){
     printSuperClass();
     printInterfaces();
     printFields();
+    printMethods();
 }
 uint16_t swapEndian16(uint16_t littleEndianInt){
     return (littleEndianInt >> 8 | littleEndianInt << 8);

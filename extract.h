@@ -15,6 +15,7 @@
 #include "classFile.h"
 #include "AccessMask.h"
 #include "Field.h"
+#include "Method.h"
 
 
 
