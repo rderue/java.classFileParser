@@ -2,10 +2,7 @@
 // Created by Ryan on 9/26/2019.
 //
 
-
-#include "classFile.h"
-
-
+#include "extract.h"
 
 ClassFile::ClassFile(char *fileName) {
     uint8_t  oneByteBuffer;
@@ -215,7 +212,7 @@ ClassFile::ClassFile(char *fileName) {
     inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
     access_flag = twoByteBuffer;
     //access_flag = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer)); todo figure out why this is little endian
-    printAccessTypes();
+    printAccessTypes(access_flag);
     /*                      Get This Class                         */
 
     inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);

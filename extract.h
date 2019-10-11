@@ -13,6 +13,10 @@
 #include <cstdint>
 #include "cPoolTagTypes.h"
 #include "classFile.h"
+#include "AccessMask.h"
+
+
+
 
 uint16_t swapEndian16(uint16_t littleEndianInt);
 
