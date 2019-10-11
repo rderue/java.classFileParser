@@ -207,7 +207,13 @@ ClassFile::ClassFile(char *fileName) {
     fields_count = read2B(inFile);
 
     /*                      Get Fields[]                         */
-
+    fields = (struct Field *) malloc(sizeof(struct Field) * fields_count);
+    for (int i = 0; i < fields_count; i++){
+        Field currentField = *(fields + i);
+        currentField.access_flags = read2B(inFile);
+        currentField.descriptor_index = read2B(inFile);
+        currentField.attribute_count = read2B(inFile);
+    }
     /*                      Get Methods Count                         */
 
     methods_count = read2B(inFile);
@@ -267,16 +273,6 @@ void ClassFile::printSuperClass(){
 void ClassFile::printUTFEntry(uint16_t constant_index){
     std::printf("%s", (*((CONSTANT_Utf8_info *)constant_pool->at(constant_index))).bytes);
 }
-
-void ClassFile::printInterfaces(){
-    std::cout << std::dec << "--------------------------" << std::endl;
-    std::cout << "interfaces_count: " << interfaces_count << std::endl;
-    std::cout << "interfaces:" << std::endl;
-    for (int i = 0; i < interfaces_count; i++){
-        std::cout << "\t" << constant_pool->at(*(interfaces + i));
-    }
-}
-
 
 void ClassFile::printConstantPool(){
     std::cout << std::dec << "--------------------------" << std::endl;
@@ -442,6 +438,31 @@ void ClassFile::printConstantPool(){
     }
 }
 
+void ClassFile::printInterfaces(){
+    std::cout << std::dec << "--------------------------" << std::endl;
+    std::cout << "interfaces_count: " << interfaces_count << std::endl;
+    std::cout << "interfaces:" << std::endl;
+    for (int i = 0; i < interfaces_count; i++){
+        std::cout << "\t" << constant_pool->at(*(interfaces + i));
+    }
+}
+
+void ClassFile::printFields(){
+    std::cout << std::dec << "--------------------------" << std::endl;
+    std::cout << "fields_count: " << fields_count << std::endl;
+    std::cout << "fields:" << std::endl;
+    for (int i = 0; i < fields_count; i++){
+        struct Field current = *(fields + i);
+        std::cout << "\tField Name: ";
+        printUTFEntry(current.name_index);
+        std::cout << "\n\tDescriptor: ";
+        printUTFEntry(current.descriptor_index);
+        std::cout << "Has access flags:" << std::endl;
+        printAccessTypes(current.access_flags);
+        std::cout << "\n\tHas " << current.attribute_count << " attributes" << std::endl;
+    }
+}
+
 void ClassFile::printClassFile(){
     std::cout << "magic number: " << std::hex << magic_number << std::endl;
     std::printf("major version: %u\n", majorVersion);
@@ -452,6 +473,7 @@ void ClassFile::printClassFile(){
     printThisClass();
     printSuperClass();
     printInterfaces();
+    printFields();
 }
 uint16_t swapEndian16(uint16_t littleEndianInt){
     return (littleEndianInt >> 8 | littleEndianInt << 8);

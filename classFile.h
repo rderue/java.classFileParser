@@ -6,7 +6,7 @@
 #define EXTRACTCLASS_CLASSFILE_H
 
 #include "extract.h"
-
+#include "Field.h"
 
 
 class ClassFile {
@@ -22,7 +22,7 @@ public:
     short interfaces_count;                  /* The number of direct superinterfaces to this class           */
     u_int16_t * interfaces;                   /* Each element is an index into constant pool for interfaces   */
     short fields_count;                      /* The number of field_info structures in the field table       */
-    char **fields;                           /* Each element of the table is a field_info structure          */
+    struct Field *fields;                           /* Each element of the table is a field_info structure          */
     short methods_count;                     /* The number of method_info structures in the method table     */
     char **methods;                          /* Each element is a method_info class for all declared methods */
     short attributes_count;                  /* The number of attributes in the attributes table             */
@@ -44,6 +44,8 @@ public:
     void printUTFEntry(uint16_t constant_index);
 
     void printInterfaces();
+
+    void printFields();
 
     void printClassFile();
 
