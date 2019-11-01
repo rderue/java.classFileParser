@@ -8,6 +8,8 @@
 struct instruction{
     std::string instrName;
     short numOperands;
+    uint16_t operand1;
+    uint16_t operand2;
 };
 
  //= (struct instruction *) malloc(sizeof(struct instruction));

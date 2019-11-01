@@ -47,6 +47,7 @@ void setCurrentInstruction(uint8_t opcode){
         case 0xb2:
             currentInstruction.instrName = "getstatic";
             currentInstruction.numOperands = 2;
+            return;
         case 0xb6:
             currentInstruction.instrName = "invokevirtual";
             currentInstruction.numOperands = 2;
@@ -57,5 +58,8 @@ void setCurrentInstruction(uint8_t opcode){
             return;
         default :
             currentInstruction.instrName = "";
+            currentInstruction.numOperands = -1;
+            currentInstruction.operand1 = -1;
+            currentInstruction.operand2 = -1;
     }
 }

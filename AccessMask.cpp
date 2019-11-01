@@ -6,7 +6,7 @@
 #include "extract.h"
 
 void printAccessTypes(u_int16_t mask){
-    std::cout << "-------------------------------------\nAccess Flags:\n\t";
+    //std::cout << "-------------------------------------\nAccess Flags:\n\t";
     if ((mask & ACC_PUBLIC) == ACC_PUBLIC){
         std::cout << "Public ";
     }
@@ -58,5 +58,5 @@ void printAccessTypes(u_int16_t mask){
     if ((mask & ACC_ENUM) == ACC_ENUM){
         std::cout << "Enum";
     }
-    std::cout << std::endl;
+    //std::cout << std::endl;
 }

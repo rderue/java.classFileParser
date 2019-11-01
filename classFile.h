@@ -8,6 +8,7 @@
 #include "extract.h"
 #include "Field.h"
 
+extern struct instruction currentInstruction;
 
 class ClassFile {
 public:
@@ -53,6 +54,8 @@ public:
     void printFields();
 
     void printMethods();
+
+    void printMethodBytecode(struct Method);
 
     void printClassFile();
 

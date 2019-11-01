@@ -23,7 +23,7 @@ ClassFile::ClassFile(char *fileName) {
     std::ifstream inFile;
     inFile.open(filePath, std::ifstream::binary);
     if (!inFile) {
-        std::cout << "The header file could not be found";
+        std::cout << "The header file could not be found" << std::endl;
         exit(1);
     }
 
@@ -225,7 +225,6 @@ ClassFile::ClassFile(char *fileName) {
     /*                      Get Methods Count                         */
     //todo why is method count also little endian?????????????????
     methods_count = read2Brev(inFile);
-    std::cout << "Bytes remaining after getting method count " << bytesRemaining << std::endl;
 
     /*                      Get Methods[]                         */
     methods = (struct Method *) malloc(methods_count * sizeof(struct Method));
@@ -233,20 +232,12 @@ ClassFile::ClassFile(char *fileName) {
         struct Method *current = (methods + i);
         current->access_flags = read2Brev(inFile);
         //todo why is access mask also little endian?????????????????
-        printMethodAccessMask(current->access_flags);
-        std::cout << "Bytes remaining after getting access mask: " << bytesRemaining << std::endl;
         //todo why is name index also little endian?????????????????
         current->name_index = read2Brev(inFile);
-        std::cout << "\tMethod Name: " << std::endl;
-        printUTFEntry(current->name_index);
         //todo why is descriptor index also little endian?????????????????
         current->descriptor_index = read2Brev(inFile);
-        std::cout << "\n\tDescriptor: ";
-        printUTFEntry(current->descriptor_index);
         //todo why is attributes count also little endian?????????????????
         current->attributes_count = read2Brev(inFile);
-        std::cout << "\n\tHas " << current->attributes_count << " attributes" << std::endl;
-        //printClassFile();
         current->attributes = new std::vector<void *>;
         for (int i = 0; i < current->attributes_count; i++) {
             twoByteBuffer = read2Brev(inFile);
@@ -279,15 +270,13 @@ ClassFile::ClassFile(char *fileName) {
 
                 read2Brev(inFile); //discard MSB of code_length
                 code_ptr->code_length = (uint32_t) read1B(inFile); //incorrect read
-                read1B(inFile); //discard LSB of code_length
-                std::cout << "code length: " << code_ptr->code_length << std::endl;
+                //std::cout << std::hex << (short) read1B(inFile); //discard LSB of code_length
                 code_ptr->code = (uint8_t *) malloc(code_ptr->code_length);
-                //printClassFile();
-                for (int j = 0; j < code_ptr->code_length; j++) {
-                    *(code_ptr->code + j) = read1B(inFile);
-                    std::cout << "Currently read bytecode" << std::hex << (unsigned short) *(code_ptr->code + j) << std::endl;
+                for (int j = 0; j <= code_ptr->code_length; j++) {
+                    *(code_ptr->code + j) = (short) read1B(inFile);
                 }
                 code_ptr->exception_table_length = read2Brev(inFile);
+                std::cout << "Length of exception table is " << code_ptr->exception_table_length << std::endl;
                 code_ptr->exceptionTable = (code_attribute::exception *) malloc(
                         code_ptr->exception_table_length * sizeof(code_attribute::exception *));
                 for (int j = 0; j < code_ptr->exception_table_length; j++) {
@@ -297,16 +286,22 @@ ClassFile::ClassFile(char *fileName) {
                     (code_ptr->exceptionTable + j)->catch_type = read2Brev(inFile);
                 }
                 code_ptr->attribute_length = read2Brev(inFile);
+                std::cout << "Number of attributes possessed by code attribute: " << code_ptr->attribute_length << std::endl;
                 for (int j = 0; j < code_ptr->attribute_length; j++) {
-                    read2Brev(inFile); //discard the name
-                    for (int k = 0; k < read4Brev(inFile); k++) {
+                    std::cout << "name of attribute possessed by code attribute: " <<
+                    (char *) (*((CONSTANT_Utf8_info *) constant_pool->at(read2Brev(inFile)))).bytes << std::endl;
+                    read2B(inFile);
+                    int length = (unsigned int)read2Brev(inFile);
+                    std::cout << "Length of that attribute is " << std::hex << length << std::endl;
+                    for (int k = 0; k < length; k++) {
                         read1B(inFile); //discard attribute length bytes
                     }
                 }
                 current->attributes->push_back(code_ptr);
             } else {
                 std::cout << "was not code" << std::endl;
-                for (int j = 0; j < read4Brev(inFile); j++) {
+                read2B(inFile);
+                for (int j = 0; j < read2Brev(inFile); j++) {
                     read1B(inFile);
                 }
             }
@@ -381,7 +376,7 @@ void ClassFile::printThisClass(){
 
 void ClassFile::printSuperClass(){
     if (super_class == 0) return;
-    std::cout <<  "-------------------------------------\n" << "super class: " << std::endl;
+    //std::cout <<  "-------------------------------------\n" << "super class: " << std::endl;
     (CONSTANT_Class_info *) constant_pool->at(super_class);
     std::cout << "\t";
     printUTFEntry((*((CONSTANT_Class_info *)constant_pool->at(super_class))).name_index);
@@ -557,7 +552,7 @@ void ClassFile::printConstantPool(){
 }
 
 void ClassFile::printInterfaces(){
-    std::cout << std::dec << "--------------------------" << std::endl;
+   // std::cout << std::dec << "--------------------------" << std::endl;
     std::cout << "interfaces_count: " << interfaces_count << std::endl;
     std::cout << "interfaces:" << std::endl;
     for (int i = 0; i < interfaces_count; i++){
@@ -566,7 +561,7 @@ void ClassFile::printInterfaces(){
 }
 
 void ClassFile::printFields(){
-    std::cout << std::dec << "--------------------------" << std::endl;
+  //  std::cout << std::dec << "--------------------------" << std::endl;
     std::cout << "Fields Count: " << fields_count << std::endl;
     std::cout << "Fields:" << std::endl;
     for (int i = 0; i < fields_count; i++){
@@ -577,10 +572,35 @@ void ClassFile::printFields(){
         printUTFEntry(current.descriptor_index);
         std::cout << "Has access flags:" << std::endl;
         printAccessTypes(current.access_flags);
-        std::cout << "\n\tHas " << current.attribute_count << " attributes" << std::endl;
+        //std::cout << "\n\tHas " << current.attribute_count << " attributes" << std::endl;
     }
 }
 
+/**
+ * Warning operands are not currently implemented generally. They only work for those operands which are constant pool
+ * indicies
+ * @param m The method whose bytecodes are to be printed.
+ */
+void ClassFile::printMethodBytecode(struct Method m){
+    for (auto &codeAttr : *m.attributes){
+        std::cout << "Code: (" << std::dec << ((code_attribute *) codeAttr)->code_length << " bytes)" << std::endl;
+        for (int i = 0; i < ((code_attribute *) codeAttr)->code_length; i++) {
+            setCurrentInstruction((short) *(((code_attribute *) codeAttr)->code + i));
+            if (currentInstruction.instrName != "") {
+                std::cout << std::dec << i << ": " << currentInstruction.instrName;
+            }
+            if (currentInstruction.numOperands == 2){
+                uint16_t operand = (short) *(((code_attribute *) codeAttr)->code + ++i) |
+                                   (short) *(((code_attribute *) codeAttr)->code + ++i);
+                std::cout << std::dec << " #" << operand;
+                //std::cout << "\t//" << (char *) (*((CONSTANT_Utf8_info *) constant_pool->at(operand))).bytes;
+                //std::cout << "\t\\";
+                //printUTFEntry((*((CONSTANT_Class_info *)constant_pool->at(operand))).name_index);
+            }
+            std::cout << std::endl;
+        }
+    }
+}
 void ClassFile::printMethods(){
     std::cout << std::dec << "--------------------------" << std::endl;
     std::cout << "Methods Count: " << methods_count << std::endl;
@@ -589,12 +609,12 @@ void ClassFile::printMethods(){
         struct Method current = *(methods + i);
         std::cout << "\tMethod Name: ";
         printUTFEntry(current.name_index);
+        std::cout << "\nHas access flags:" << std::endl;
+        printAccessTypes(current.access_flags);
         std::cout << "\n\tDescriptor: ";
         printUTFEntry(current.descriptor_index);
-        std::cout << "Has access flags:" << std::endl;
-        printAccessTypes(current.access_flags);
-        std::cout << "\n\tHas " << current.attributes_count << " attributes" << std::endl;
-        std::cout << "Code: " << std::endl;
+        std::cout << std::endl;
+        //std::cout << "\n\tHas " << current.attributes_count << " attributes" << std::endl;
         printMethodBytecode(current);
         std::cout << std::endl;
     }
