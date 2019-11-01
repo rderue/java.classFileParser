@@ -23,6 +23,8 @@
 
 uint16_t swapEndian16(uint16_t littleEndianInt);
 
+uint32_t swapEndian32(uint32_t littleEndianInt);
+
 #endif //EXTRACTCLASS_EXTRACT_H
 
 

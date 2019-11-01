@@ -2,9 +2,14 @@
 // Created by Ryan on 9/26/2019.
 //
 
+
 #include "extract.h"
 
 long bytesRemaining;
+
+long sizeofFile(std::string);
+
+bool DEBUG = true;
 
 ClassFile::ClassFile(char *fileName) {
     uint16_t twoByteBuffer;
@@ -168,7 +173,7 @@ ClassFile::ClassFile(char *fileName) {
                 long_ptr->high_bytes = read4B(inFile);
                 long_ptr->low_bytes = read4B(inFile);
                 constant_pool->at(i++) = ((void*) long_ptr);
-                constant_pool->at(i) = (NULL);
+                constant_pool->at(i) = NULL;
                 break;
 
             case CONSTANT_Double:
@@ -177,7 +182,7 @@ ClassFile::ClassFile(char *fileName) {
                 dub_ptr->high_bytes = read4B(inFile);
                 dub_ptr->low_bytes = read4B(inFile);
                 constant_pool->at(i++) = ((void*) dub_ptr);
-                constant_pool->at(i) = (NULL);
+                constant_pool->at(i) = NULL;
                 break;
         }
     }
@@ -219,15 +224,16 @@ ClassFile::ClassFile(char *fileName) {
     /*                      Get Methods Count                         */
     //todo why is method count also little endian?????????????????
     methods_count = read2Brev(inFile);
-    std::cout << "Bytes remaining after getting method count" << bytesRemaining << std::endl;
-    /*                      Get Methods[]                         */
+    std::cout << "Bytes remaining after getting method count " << bytesRemaining << std::endl;
 
+    /*                      Get Methods[]                         */
     methods = (struct Method *) malloc(methods_count * sizeof(struct Method));
     for (int i = 0; i < methods_count; i++){
         struct Method * current = (methods + i);
         current->access_flags = read2Brev(inFile);
         //todo why is access mask also little endian?????????????????
         printMethodAccessMask(current->access_flags);
+        std::cout << "Bytes remaining after getting access mask: " << bytesRemaining << std::endl;
         //todo why is name index also little endian?????????????????
         current->name_index = read2Brev(inFile);
         std::cout << "\tMethod Name: " <<std::endl;
@@ -242,22 +248,39 @@ ClassFile::ClassFile(char *fileName) {
         //printClassFile();
         for (int i = 0; i < current->attributes_count; i++) {
             twoByteBuffer = read2Brev(inFile);
-            std::cout << "Bytes remaining after getting attributes count: " << bytesRemaining << std::endl;
+            std::cout << "Bytes remaining after getting attribute name: " << bytesRemaining << std::endl;
             /* Deal with attribute identification */
             std::string attributeName = (char *) (*((CONSTANT_Utf8_info *) constant_pool->at(twoByteBuffer))).bytes;
             std::cout << "Attribute name is " << attributeName << std::endl;
 
 
+
+            /*
+             * TODO There is a known bug in this function described below
+             *
+             * When looking at the hexdumped output of the classFile, it is possible to see what the values for
+             * attribute length and code_length should be--however each of these functions initially used read4B.
+             * When using read4B or read4Brev, the current byte of the file would increase by 5 which would throw
+             * off all subsequent reads. To get around this, I am using read2B and read1B and discarding the rest
+             * of the bytes, because for small programs, these are usually 0s. This means this will only work for
+             * very small functions, but I am hopeful that this can be fixed.
+             */
             if (attributeName == "Code"){
+
                 struct code_attribute * code_ptr = (struct code_attribute *)malloc(sizeof(struct code_attribute));
                 code_ptr->attribute_name_index = twoByteBuffer;
-                code_ptr->attribute_length = read4Brev(inFile);
-                std::cout <<"attribute_length: " << code_ptr->attribute_length << std::endl;
+                read2Brev(inFile);
+                code_ptr->attribute_length =(uint16_t) read2Brev(inFile);
+                if (DEBUG) std::cout << "attribute_length: " << code_ptr->attribute_length << std::endl;
                 code_ptr->max_stack = read2Brev(inFile);
                 code_ptr->max_locals = read2Brev(inFile);
-                code_ptr->code_length = read4B(inFile);
-                code_ptr->code = (uint8_t *) malloc(code_ptr->code_length);
 
+                read2Brev(inFile);
+                code_ptr->code_length = (uint32_t ) read1B(inFile);
+                read1B(inFile);
+                std::cout << "code length: " << code_ptr->code_length << std::endl;
+                code_ptr->code = (uint8_t *) malloc(code_ptr->code_length);
+                printClassFile();
                 for (int j = 0; j < code_ptr->code_length; j++){
                     *(code_ptr->code + j) = read1B(inFile);
                 }
@@ -277,8 +300,8 @@ ClassFile::ClassFile(char *fileName) {
                     }
                 }
             }
-
             else {
+                std::cout << "was not code" << std::endl;
                 for (int j = 0; j < read4Brev(inFile); j++){
                     read1B(inFile);
                 }
@@ -290,7 +313,7 @@ ClassFile::ClassFile(char *fileName) {
 
     }
 
-    /*                      Get Attributes Count                         */
+                /*                      Get Attributes Count                         */
 
     /*                      Get Attributes[]                         */
     //TODO: Implement Methods
@@ -323,25 +346,26 @@ uint16_t ClassFile::read2B(std::ifstream& inFile){
     return twoByteBuffer;
 }
 
-uint32_t ClassFile::read4B(std::ifstream& inFile) {
+uint32_t ClassFile::read4Brev(std::ifstream& inFile){
     uint32_t fourByteBuffer;
     inFile.read(reinterpret_cast<char *>(&fourByteBuffer), 4);
-    if (!this->bigEndian) {
-        return __bswap_32(fourByteBuffer);
+    if (this->bigEndian){
+        return swapEndian32(fourByteBuffer);
     }
     bytesRemaining -= 4;
     return fourByteBuffer;
 }
 
-uint32_t ClassFile::read4Brev(std::ifstream& inFile){
+uint32_t ClassFile::read4B(std::ifstream& inFile) {
     uint32_t fourByteBuffer;
     inFile.read(reinterpret_cast<char *>(&fourByteBuffer), 4);
-    if (!this->bigEndian){
-        return __bswap_32(fourByteBuffer);
+    if (!this->bigEndian) {
+        return swapEndian32(fourByteBuffer);
     }
     bytesRemaining -= 4;
     return fourByteBuffer;
 }
+
 
 void ClassFile::printThisClass(){
     std::cout <<  "-------------------------------------\n" << "this: " << std::endl;
@@ -582,8 +606,17 @@ void ClassFile::printClassFile(){
     printFields();
     printMethods();
 }
+
 uint16_t swapEndian16(uint16_t littleEndianInt){
     return (littleEndianInt >> 8 | littleEndianInt << 8);
+}
+
+uint32_t swapEndian32(uint32_t littleEndianInt) {
+    return littleEndianInt >> 24 |
+            ((littleEndianInt << 8) & 0x00FF0000) |
+            ((littleEndianInt >> 8) & 0x0000FF00) |
+            littleEndianInt << 24;
+
 }
 
 long sizeofFile(std::string filePath){

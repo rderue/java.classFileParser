@@ -59,6 +59,4 @@ public:
 
 };
 
-long sizeofFile(std::string);
-
 #endif //EXTRACTCLASS_CLASSFILE_H
