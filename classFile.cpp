@@ -4,6 +4,8 @@
 
 #include "extract.h"
 
+long bytesRemaining;
+
 ClassFile::ClassFile(char *fileName) {
     uint16_t twoByteBuffer;
 
@@ -11,6 +13,8 @@ ClassFile::ClassFile(char *fileName) {
     std::string filePath = std::string(std::experimental::filesystem::current_path().parent_path());
     filePath.append("/");
     filePath.append(fileName);
+    bytesRemaining = sizeofFile(filePath);
+    std::cout << "Size of " << fileName << " is " << bytesRemaining << " bytes" << std::endl;
     std::ifstream inFile;
     inFile.open(filePath, std::ifstream::binary);
     if (!inFile) {
@@ -179,22 +183,20 @@ ClassFile::ClassFile(char *fileName) {
     }
     /*                      Get Access Flags                       */
 
-    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
-    access_flag = twoByteBuffer;
-    //access_flag = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer)); todo figure out why this is little endian
+    access_flag = read2Brev(inFile);
+    // todo figure out why this is little endian
     /*                      Get This Class                         */
 
-    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
-    //this_class = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer)); todo figure out why this is little endian
-    this_class = twoByteBuffer;
+    //todo figure out why this is little endian
+    this_class = read2Brev(inFile);
     /*                      Get Super Class                         */
 
-    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
-    //super_class = (bigEndian ? twoByteBuffer : swapEndian16(twoByteBuffer)); todo figure out why this is little endian
-    super_class = twoByteBuffer;
+    //todo figure out why this is little endian
+    super_class = read2Brev(inFile);
     /*                      Get Interfaces Count                         */
 
     interfaces_count = read2B(inFile);
+    std::cout << "Bytes remaining after parsing super class: " << bytesRemaining << std::endl;
 
     /*                      Get Interfaces[]                         */
 
@@ -215,57 +217,47 @@ ClassFile::ClassFile(char *fileName) {
         currentField.attribute_count = read2B(inFile);
     }
     /*                      Get Methods Count                         */
-    inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
-    if (this->bigEndian){
-        twoByteBuffer = swapEndian16(twoByteBuffer);
-    }
-    methods_count = twoByteBuffer;
-
+    //todo why is method count also little endian?????????????????
+    methods_count = read2Brev(inFile);
+    std::cout << "Bytes remaining after getting method count" << bytesRemaining << std::endl;
     /*                      Get Methods[]                         */
 
     methods = (struct Method *) malloc(methods_count * sizeof(struct Method));
     for (int i = 0; i < methods_count; i++){
         struct Method * current = (methods + i);
-        inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
-        if (this->bigEndian){
-            twoByteBuffer = swapEndian16(twoByteBuffer);
-        }
-        current->access_flags = twoByteBuffer;
-        std::cout << "Has access flags:" << std::endl;
+        current->access_flags = read2Brev(inFile);
+        //todo why is access mask also little endian?????????????????
         printMethodAccessMask(current->access_flags);
-        inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
-        if (this->bigEndian){
-            twoByteBuffer = swapEndian16(twoByteBuffer);
-        }
-        current->name_index = twoByteBuffer;
-        std::cout << "\tMethod Name: ";
+        //todo why is name index also little endian?????????????????
+        current->name_index = read2Brev(inFile);
+        std::cout << "\tMethod Name: " <<std::endl;
         printUTFEntry(current->name_index);
-        inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
-        if (this->bigEndian){
-            twoByteBuffer = swapEndian16(twoByteBuffer);
-        }
-        current->descriptor_index = twoByteBuffer;
+        //todo why is descriptor index also little endian?????????????????
+        current->descriptor_index = read2Brev(inFile);
         std::cout << "\n\tDescriptor: ";
         printUTFEntry(current->descriptor_index);
-        inFile.read(reinterpret_cast<char *>(&twoByteBuffer), 2);
-        if (this->bigEndian){
-            twoByteBuffer = swapEndian16(twoByteBuffer);
-        }
-        current->attributes_count = twoByteBuffer;
+        //todo why is attributes count also little endian?????????????????
+        current->attributes_count = read2Brev(inFile);
         std::cout << "\n\tHas " << current->attributes_count << " attributes" << std::endl;
+        //printClassFile();
         for (int i = 0; i < current->attributes_count; i++) {
             twoByteBuffer = read2Brev(inFile);
-
+            std::cout << "Bytes remaining after getting attributes count: " << bytesRemaining << std::endl;
             /* Deal with attribute identification */
             std::string attributeName = (char *) (*((CONSTANT_Utf8_info *) constant_pool->at(twoByteBuffer))).bytes;
+            std::cout << "Attribute name is " << attributeName << std::endl;
+
+
             if (attributeName == "Code"){
                 struct code_attribute * code_ptr = (struct code_attribute *)malloc(sizeof(struct code_attribute));
                 code_ptr->attribute_name_index = twoByteBuffer;
-                code_ptr->attribute_length = read4B(inFile);
+                code_ptr->attribute_length = read4Brev(inFile);
+                std::cout <<"attribute_length: " << code_ptr->attribute_length << std::endl;
                 code_ptr->max_stack = read2Brev(inFile);
                 code_ptr->max_locals = read2Brev(inFile);
                 code_ptr->code_length = read4B(inFile);
                 code_ptr->code = (uint8_t *) malloc(code_ptr->code_length);
+
                 for (int j = 0; j < code_ptr->code_length; j++){
                     *(code_ptr->code + j) = read1B(inFile);
                 }
@@ -307,6 +299,7 @@ ClassFile::ClassFile(char *fileName) {
 uint8_t ClassFile::read1B(std::ifstream& inFile){
     uint8_t oneByteBuffer;
     inFile.read(reinterpret_cast<char *>(&oneByteBuffer), 1);
+    bytesRemaining--;
     return oneByteBuffer;
 }
 
@@ -316,6 +309,7 @@ uint16_t ClassFile::read2Brev(std::ifstream& inFile){
     if (this->bigEndian){
         return swapEndian16(twoByteBuffer);
     }
+    bytesRemaining -= 2;
     return twoByteBuffer;
 }
 
@@ -325,6 +319,7 @@ uint16_t ClassFile::read2B(std::ifstream& inFile){
     if (!this->bigEndian){
         return swapEndian16(twoByteBuffer);
     }
+    bytesRemaining -= 2;
     return twoByteBuffer;
 }
 
@@ -334,6 +329,7 @@ uint32_t ClassFile::read4B(std::ifstream& inFile) {
     if (!this->bigEndian) {
         return __bswap_32(fourByteBuffer);
     }
+    bytesRemaining -= 4;
     return fourByteBuffer;
 }
 
@@ -343,6 +339,7 @@ uint32_t ClassFile::read4Brev(std::ifstream& inFile){
     if (!this->bigEndian){
         return __bswap_32(fourByteBuffer);
     }
+    bytesRemaining -= 4;
     return fourByteBuffer;
 }
 
@@ -589,6 +586,14 @@ uint16_t swapEndian16(uint16_t littleEndianInt){
     return (littleEndianInt >> 8 | littleEndianInt << 8);
 }
 
+long sizeofFile(std::string filePath){
+    std::ifstream inFile;
+    inFile.open(filePath, std::ifstream::binary);
+    long begin = inFile.tellg();
+    inFile.seekg(0, std::ios::end);
+    long end = inFile.tellg();
+    return end - begin;
+}
 
 
 
