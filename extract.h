@@ -17,6 +17,7 @@
 #include "Field.h"
 #include "Method.h"
 #include "attributeInfo.h"
+#include "bytecode.h"
 
 
 

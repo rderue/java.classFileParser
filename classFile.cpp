@@ -51,137 +51,138 @@ ClassFile::ClassFile(char *fileName) {
     /*                      Get Constant Pool                   */
     constant_pool_count = read2B(inFile);
     constant_pool = new std::vector<void *>(constant_pool_count + 1);
-    for (int i = 1; i <= constant_pool_count; i++){
+    for (int i = 1; i <= constant_pool_count; i++) {
         uint8_t tag = read1B(inFile);
 
         /*  Declare all necessary variables before the switch statement */
 
-        CONSTANT_Class_info * class_ptr;
-        CONSTANT_Fieldref_info * field_ptr;
-        CONSTANT_Float_info * float_ptr;
-        CONSTANT_Integer_info * int_ptr;
-        CONSTANT_InterfaceMethodref_info * interfaceMethod_ptr;
-        CONSTANT_InvokeDynamic_info * invdyn_ptr;
-        CONSTANT_MethodHandle_info * methodhdl_ptr;
-        CONSTANT_Methodref_info * method_ptr;
-        CONSTANT_MethodType_info * method_type_ptr;
-        CONSTANT_NameAndType_info * nat_ptr;
-        CONSTANT_String_info * str_ptr;
-        CONSTANT_Utf8_info * utf_ptr;
-        CONSTANT_Long_info * long_ptr;
-        CONSTANT_Double_info * dub_ptr;
+        CONSTANT_Class_info *class_ptr;
+        CONSTANT_Fieldref_info *field_ptr;
+        CONSTANT_Float_info *float_ptr;
+        CONSTANT_Integer_info *int_ptr;
+        CONSTANT_InterfaceMethodref_info *interfaceMethod_ptr;
+        CONSTANT_InvokeDynamic_info *invdyn_ptr;
+        CONSTANT_MethodHandle_info *methodhdl_ptr;
+        CONSTANT_Methodref_info *method_ptr;
+        CONSTANT_MethodType_info *method_type_ptr;
+        CONSTANT_NameAndType_info *nat_ptr;
+        CONSTANT_String_info *str_ptr;
+        CONSTANT_Utf8_info *utf_ptr;
+        CONSTANT_Long_info *long_ptr;
+        CONSTANT_Double_info *dub_ptr;
 
-        switch(tag) {
+        switch (tag) {
             case CONSTANT_Class:
-                class_ptr = (CONSTANT_Class_info *)malloc(sizeof(struct CONSTANT_Class_info));
-                class_ptr->tag=tag;
+                class_ptr = (CONSTANT_Class_info *) malloc(sizeof(struct CONSTANT_Class_info));
+                class_ptr->tag = tag;
                 class_ptr->name_index = read2B(inFile);
-                constant_pool->at(i) =(void*) class_ptr;
+                constant_pool->at(i) = (void *) class_ptr;
                 break;
 
             case CONSTANT_Fieldref:
-                field_ptr = (CONSTANT_Fieldref_info *)malloc(sizeof(struct CONSTANT_Fieldref_info));
-                field_ptr->tag=tag;
+                field_ptr = (CONSTANT_Fieldref_info *) malloc(sizeof(struct CONSTANT_Fieldref_info));
+                field_ptr->tag = tag;
                 field_ptr->class_index = read2B(inFile);
                 field_ptr->name_and_type_index = read2B(inFile);
-                constant_pool->at(i) = ((void*) field_ptr);
+                constant_pool->at(i) = ((void *) field_ptr);
                 break;
 
             case CONSTANT_Float:
-                float_ptr = (CONSTANT_Float_info *)malloc(sizeof(struct CONSTANT_Float_info));
-                float_ptr->tag=tag;
+                float_ptr = (CONSTANT_Float_info *) malloc(sizeof(struct CONSTANT_Float_info));
+                float_ptr->tag = tag;
                 float_ptr->bytes = read4B(inFile);
-                constant_pool->at(i) = ((void*) float_ptr);
+                constant_pool->at(i) = ((void *) float_ptr);
                 break;
 
             case CONSTANT_Integer:
-                int_ptr = (CONSTANT_Integer_info *)malloc(sizeof(struct CONSTANT_Integer_info));
-                int_ptr->tag=tag;
+                int_ptr = (CONSTANT_Integer_info *) malloc(sizeof(struct CONSTANT_Integer_info));
+                int_ptr->tag = tag;
                 int_ptr->bytes = read4B(inFile);
-                constant_pool->at(i) = ((void*) int_ptr);
+                constant_pool->at(i) = ((void *) int_ptr);
                 break;
 
             case CONSTANT_InterfaceMethodref:
-                interfaceMethod_ptr = (CONSTANT_InterfaceMethodref_info *)malloc(sizeof(struct CONSTANT_InterfaceMethodref_info));
-                interfaceMethod_ptr->tag=tag;
+                interfaceMethod_ptr = (CONSTANT_InterfaceMethodref_info *) malloc(
+                        sizeof(struct CONSTANT_InterfaceMethodref_info));
+                interfaceMethod_ptr->tag = tag;
                 interfaceMethod_ptr->class_index = read2B(inFile);
                 interfaceMethod_ptr->name_and_type_index = read2B(inFile);
-                constant_pool->at(i) = ((void*) interfaceMethod_ptr);
+                constant_pool->at(i) = ((void *) interfaceMethod_ptr);
                 break;
 
             case CONSTANT_InvokeDynamic:
-                invdyn_ptr = (CONSTANT_InvokeDynamic_info *)malloc(sizeof(struct CONSTANT_InvokeDynamic_info));
-                invdyn_ptr->tag=tag;
+                invdyn_ptr = (CONSTANT_InvokeDynamic_info *) malloc(sizeof(struct CONSTANT_InvokeDynamic_info));
+                invdyn_ptr->tag = tag;
                 invdyn_ptr->bootstrap_method_attr_index = read2B(inFile);
                 invdyn_ptr->name_and_type_index = read2B(inFile);
-                constant_pool->at(i) = ((void*) invdyn_ptr);
+                constant_pool->at(i) = ((void *) invdyn_ptr);
                 break;
 
             case CONSTANT_MethodHandle:
-                methodhdl_ptr = (CONSTANT_MethodHandle_info *)malloc(sizeof(struct CONSTANT_MethodHandle_info));
-                methodhdl_ptr->tag=tag;
+                methodhdl_ptr = (CONSTANT_MethodHandle_info *) malloc(sizeof(struct CONSTANT_MethodHandle_info));
+                methodhdl_ptr->tag = tag;
                 methodhdl_ptr->reference_kind = read1B(inFile);
                 methodhdl_ptr->reference_index = read2B(inFile);
-                constant_pool->at(i) = ((void*) methodhdl_ptr);
+                constant_pool->at(i) = ((void *) methodhdl_ptr);
                 break;
 
             case CONSTANT_Methodref:
-                method_ptr = (CONSTANT_Methodref_info *)malloc(sizeof(struct CONSTANT_Methodref_info));
-                method_ptr->tag=tag;
+                method_ptr = (CONSTANT_Methodref_info *) malloc(sizeof(struct CONSTANT_Methodref_info));
+                method_ptr->tag = tag;
                 method_ptr->class_index = read2B(inFile);
                 method_ptr->name_and_type_index = read2B(inFile);
-                constant_pool->at(i) = ((void*) method_ptr);
+                constant_pool->at(i) = ((void *) method_ptr);
                 break;
 
             case CONSTANT_MethodType:
-                method_type_ptr = (CONSTANT_MethodType_info *)malloc(sizeof(struct CONSTANT_MethodType_info));
-                method_type_ptr->tag=tag;
+                method_type_ptr = (CONSTANT_MethodType_info *) malloc(sizeof(struct CONSTANT_MethodType_info));
+                method_type_ptr->tag = tag;
                 method_type_ptr->descriptor_index = read2B(inFile);
-                constant_pool->at(i) = ((void*) method_type_ptr);
+                constant_pool->at(i) = ((void *) method_type_ptr);
                 break;
 
             case CONSTANT_NameAndType:
-                nat_ptr = (CONSTANT_NameAndType_info *)malloc(sizeof(struct CONSTANT_NameAndType_info));
-                nat_ptr->tag=tag;
+                nat_ptr = (CONSTANT_NameAndType_info *) malloc(sizeof(struct CONSTANT_NameAndType_info));
+                nat_ptr->tag = tag;
                 nat_ptr->name_index = read2B(inFile);
                 nat_ptr->descriptor_index = read2B(inFile);
-                constant_pool->at(i) = ((void*) nat_ptr);
+                constant_pool->at(i) = ((void *) nat_ptr);
                 break;
 
             case CONSTANT_String:
-                str_ptr = (CONSTANT_String_info *)malloc(sizeof(struct CONSTANT_String_info));
-                str_ptr->tag=tag;
+                str_ptr = (CONSTANT_String_info *) malloc(sizeof(struct CONSTANT_String_info));
+                str_ptr->tag = tag;
                 str_ptr->string_index = read2B(inFile);
-                constant_pool->at(i) = ((void*) str_ptr);
+                constant_pool->at(i) = ((void *) str_ptr);
 
                 break;
             case CONSTANT_Utf8:
-                utf_ptr = (CONSTANT_Utf8_info *)malloc(sizeof(struct CONSTANT_Utf8_info));
-                utf_ptr->tag=tag;
+                utf_ptr = (CONSTANT_Utf8_info *) malloc(sizeof(struct CONSTANT_Utf8_info));
+                utf_ptr->tag = tag;
                 utf_ptr->length = read2B(inFile);
                 utf_ptr->bytes = (uint8_t *) malloc(sizeof(uint8_t) * (utf_ptr->length) + 1);
-                for (int i = 0; i < utf_ptr->length; i++){
+                for (int i = 0; i < utf_ptr->length; i++) {
                     utf_ptr->bytes[i] = read1B(inFile);
                 }
                 utf_ptr->bytes[utf_ptr->length] = NULL;
-                constant_pool->at(i) = ((void*) utf_ptr);
+                constant_pool->at(i) = ((void *) utf_ptr);
                 break;
 
             case CONSTANT_Long:
-                long_ptr = (CONSTANT_Long_info *)malloc(sizeof(struct CONSTANT_Long_info));
-                long_ptr->tag=tag;
+                long_ptr = (CONSTANT_Long_info *) malloc(sizeof(struct CONSTANT_Long_info));
+                long_ptr->tag = tag;
                 long_ptr->high_bytes = read4B(inFile);
                 long_ptr->low_bytes = read4B(inFile);
-                constant_pool->at(i++) = ((void*) long_ptr);
+                constant_pool->at(i++) = ((void *) long_ptr);
                 constant_pool->at(i) = NULL;
                 break;
 
             case CONSTANT_Double:
-                dub_ptr = (CONSTANT_Double_info *)malloc(sizeof(struct CONSTANT_Double_info));
-                dub_ptr->tag=tag;
+                dub_ptr = (CONSTANT_Double_info *) malloc(sizeof(struct CONSTANT_Double_info));
+                dub_ptr->tag = tag;
                 dub_ptr->high_bytes = read4B(inFile);
                 dub_ptr->low_bytes = read4B(inFile);
-                constant_pool->at(i++) = ((void*) dub_ptr);
+                constant_pool->at(i++) = ((void *) dub_ptr);
                 constant_pool->at(i) = NULL;
                 break;
         }
@@ -206,7 +207,7 @@ ClassFile::ClassFile(char *fileName) {
     /*                      Get Interfaces[]                         */
 
     interfaces = (uint16_t *) malloc(interfaces_count * sizeof(uint16_t));
-    for (int i = 0; i < interfaces_count; i++){
+    for (int i = 0; i < interfaces_count; i++) {
         *(interfaces + i) = read2B(inFile);
     }
 
@@ -215,7 +216,7 @@ ClassFile::ClassFile(char *fileName) {
 
     /*                      Get Fields[]                         */
     fields = (struct Field *) malloc(sizeof(struct Field) * fields_count);
-    for (int i = 0; i < fields_count; i++){
+    for (int i = 0; i < fields_count; i++) {
         struct Field currentField = *(fields + i);
         currentField.access_flags = read2B(inFile);
         currentField.descriptor_index = read2B(inFile);
@@ -228,15 +229,15 @@ ClassFile::ClassFile(char *fileName) {
 
     /*                      Get Methods[]                         */
     methods = (struct Method *) malloc(methods_count * sizeof(struct Method));
-    for (int i = 0; i < methods_count; i++){
-        struct Method * current = (methods + i);
+    for (int i = 0; i < methods_count; i++) {
+        struct Method *current = (methods + i);
         current->access_flags = read2Brev(inFile);
         //todo why is access mask also little endian?????????????????
         printMethodAccessMask(current->access_flags);
         std::cout << "Bytes remaining after getting access mask: " << bytesRemaining << std::endl;
         //todo why is name index also little endian?????????????????
         current->name_index = read2Brev(inFile);
-        std::cout << "\tMethod Name: " <<std::endl;
+        std::cout << "\tMethod Name: " << std::endl;
         printUTFEntry(current->name_index);
         //todo why is descriptor index also little endian?????????????????
         current->descriptor_index = read2Brev(inFile);
@@ -265,53 +266,52 @@ ClassFile::ClassFile(char *fileName) {
              * of the bytes, because for small programs, these are usually 0s. This means this will only work for
              * very small functions, but I am hopeful that this can be fixed.
              */
-            if (attributeName == "Code"){
+            if (attributeName == "Code") {
 
-                struct code_attribute * code_ptr = (struct code_attribute *)malloc(sizeof(struct code_attribute));
+                struct code_attribute *code_ptr = (struct code_attribute *) malloc(sizeof(struct code_attribute));
                 code_ptr->attribute_name_index = twoByteBuffer;
-                read2Brev(inFile);
-                code_ptr->attribute_length =(uint16_t) read2Brev(inFile);
+                read2Brev(inFile); //discards MSB of attribute_length
+                code_ptr->attribute_length = (uint16_t) read2Brev(inFile); //incorrect read
                 if (DEBUG) std::cout << "attribute_length: " << code_ptr->attribute_length << std::endl;
                 code_ptr->max_stack = read2Brev(inFile);
                 code_ptr->max_locals = read2Brev(inFile);
 
-                read2Brev(inFile);
-                code_ptr->code_length = (uint32_t ) read1B(inFile);
-                read1B(inFile);
+                read2Brev(inFile); //discard MSB of code_length
+                code_ptr->code_length = (uint32_t) read1B(inFile); //incorrect read
+                read1B(inFile); //discard LSB of code_length
                 std::cout << "code length: " << code_ptr->code_length << std::endl;
                 code_ptr->code = (uint8_t *) malloc(code_ptr->code_length);
-                printClassFile();
-                for (int j = 0; j < code_ptr->code_length; j++){
+                //printClassFile();
+                for (int j = 0; j < code_ptr->code_length; j++) {
                     *(code_ptr->code + j) = read1B(inFile);
                 }
                 code_ptr->exception_table_length = read2Brev(inFile);
-                code_ptr->exceptionTable = (code_attribute::exception *) malloc(code_ptr->exception_table_length * sizeof(code_attribute::exception *));
-                for (int j = 0; j < code_ptr->exception_table_length; j++){
+                code_ptr->exceptionTable = (code_attribute::exception *) malloc(
+                        code_ptr->exception_table_length * sizeof(code_attribute::exception *));
+                for (int j = 0; j < code_ptr->exception_table_length; j++) {
                     (code_ptr->exceptionTable + j)->start_pc = read2Brev(inFile);
                     (code_ptr->exceptionTable + j)->end_pc = read2Brev(inFile);
                     (code_ptr->exceptionTable + j)->handler_pc = read2Brev(inFile);
                     (code_ptr->exceptionTable + j)->catch_type = read2Brev(inFile);
                 }
                 code_ptr->attribute_length = read2Brev(inFile);
-                for (int j = 0; j < code_ptr->attribute_length; j++){
+                for (int j = 0; j < code_ptr->attribute_length; j++) {
                     read2Brev(inFile); //discard the name
-                    for (int k = 0; k < read4Brev(inFile); k++){
+                    for (int k = 0; k < read4Brev(inFile); k++) {
                         read1B(inFile); //discard attribute length bytes
                     }
                 }
-            }
-            else {
+            } else {
                 std::cout << "was not code" << std::endl;
-                for (int j = 0; j < read4Brev(inFile); j++){
+                for (int j = 0; j < read4Brev(inFile); j++) {
                     read1B(inFile);
                 }
             }
         }
-
-        }
-    printClassFile();
-
     }
+}
+    //printClassFile
+
 
                 /*                      Get Attributes Count                         */
 
