@@ -10,7 +10,7 @@ struct instruction{
     short numOperands;
 };
 
-static struct instruction currentInstruction;
+ //= (struct instruction *) malloc(sizeof(struct instruction));
 
 void setCurrentInstruction(uint8_t opcode);
 

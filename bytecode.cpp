@@ -1,5 +1,7 @@
 #include "extract.h"
 
+struct instruction currentInstruction;
+
 /*
  * Function for obtaining the string representation of each instruction
  * The return value will be <instruction> <number of operands>
@@ -53,5 +55,7 @@ void setCurrentInstruction(uint8_t opcode){
             currentInstruction.instrName = "invokespecial";
             currentInstruction.numOperands = 2;
             return;
+        default :
+            currentInstruction.instrName = "";
     }
 }

@@ -2,8 +2,8 @@
 // Created by Ryan on 10/11/2019.
 //
 
-#include "Method.h"
 #include "extract.h"
+extern struct instruction currentInstruction;
 
 void printMethodAccessMask(uint16_t mask) {
     std::cout << "-------------------------------------\nAccess Flags:\n\t";
@@ -56,4 +56,15 @@ void printMethodAccessMask(uint16_t mask) {
     }
 
     std::cout << std::endl;
+}
+
+void printMethodBytecode(struct Method m){
+    for (auto &codeAttr : *m.attributes){
+        for (int i = 0; i < ((code_attribute *) codeAttr)->code_length; i++) {
+            setCurrentInstruction((short) *(((code_attribute *) codeAttr)->code + i));
+            if (currentInstruction.instrName != "") {
+                std::cout << currentInstruction.instrName << std::endl;
+            }
+        }
+    }
 }

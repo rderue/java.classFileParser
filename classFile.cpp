@@ -247,6 +247,7 @@ ClassFile::ClassFile(char *fileName) {
         current->attributes_count = read2Brev(inFile);
         std::cout << "\n\tHas " << current->attributes_count << " attributes" << std::endl;
         //printClassFile();
+        current->attributes = new std::vector<void *>;
         for (int i = 0; i < current->attributes_count; i++) {
             twoByteBuffer = read2Brev(inFile);
             std::cout << "Bytes remaining after getting attribute name: " << bytesRemaining << std::endl;
@@ -284,6 +285,7 @@ ClassFile::ClassFile(char *fileName) {
                 //printClassFile();
                 for (int j = 0; j < code_ptr->code_length; j++) {
                     *(code_ptr->code + j) = read1B(inFile);
+                    std::cout << "Currently read bytecode" << std::hex << (unsigned short) *(code_ptr->code + j) << std::endl;
                 }
                 code_ptr->exception_table_length = read2Brev(inFile);
                 code_ptr->exceptionTable = (code_attribute::exception *) malloc(
@@ -301,6 +303,7 @@ ClassFile::ClassFile(char *fileName) {
                         read1B(inFile); //discard attribute length bytes
                     }
                 }
+                current->attributes->push_back(code_ptr);
             } else {
                 std::cout << "was not code" << std::endl;
                 for (int j = 0; j < read4Brev(inFile); j++) {
@@ -309,8 +312,9 @@ ClassFile::ClassFile(char *fileName) {
             }
         }
     }
+    printClassFile();
 }
-    //printClassFile
+
 
 
                 /*                      Get Attributes Count                         */
@@ -590,6 +594,9 @@ void ClassFile::printMethods(){
         std::cout << "Has access flags:" << std::endl;
         printAccessTypes(current.access_flags);
         std::cout << "\n\tHas " << current.attributes_count << " attributes" << std::endl;
+        std::cout << "Code: " << std::endl;
+        printMethodBytecode(current);
+        std::cout << std::endl;
     }
 }
 
@@ -600,6 +607,7 @@ void ClassFile::printClassFile(){
     std::printf("constant_pool_count: %u\n", constant_pool_count);
     printConstantPool();
     printAccessTypes(access_flag);
+    std::cout << std::endl;
     printThisClass();
     printSuperClass();
     printInterfaces();

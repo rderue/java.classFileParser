@@ -26,7 +26,8 @@ public:
     short methods_count;                     /* The number of method_info structures in the method table     */
     struct Method * methods;                 /* Each element is a method_info class for all declared methods */
     short attributes_count;                  /* The number of attributes in the attributes table             */
-    char **attributes;                       /* Additional descriptive information                           */
+    std::vector<struct attributeInfo *>
+            * attributes;                      /* Additional descriptive information                           */
     bool bigEndian;                          /* True if machine is bigEndian, false otherwise                */
 
     ClassFile(char *fileName);

@@ -28,11 +28,11 @@ struct Method {
     uint16_t name_index;
     uint16_t descriptor_index;
     uint16_t attributes_count;
-    std::vector<void *> attributes;
+    std::vector<void *> * attributes;
 };
 
 void printMethodAccessMask(uint16_t mask);
 
-
+void printMethodBytecode(struct Method);
 
 #endif //EXTRACTCLASS_METHOD_H
