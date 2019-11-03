@@ -9,7 +9,7 @@ long bytesRemaining;
 
 long sizeofFile(std::string);
 
-bool DEBUG = true;
+bool DEBUG = false;
 
 ClassFile::ClassFile(char *fileName) {
     uint16_t twoByteBuffer;
@@ -19,7 +19,6 @@ ClassFile::ClassFile(char *fileName) {
     filePath.append("/");
     filePath.append(fileName);
     bytesRemaining = sizeofFile(filePath);
-    std::cout << "Size of " << fileName << " is " << bytesRemaining << " bytes" << std::endl;
     std::ifstream inFile;
     inFile.open(filePath, std::ifstream::binary);
     if (!inFile) {
@@ -35,16 +34,7 @@ ClassFile::ClassFile(char *fileName) {
     }
 
     /*                      Get Version Number                  */
-    //fourByteBuffer = read4B(inFile);
-    /*if (bigEndian) {
-        majorVersion = (unsigned short) (fourByteBuffer >> 16);
-        minorVersion = (unsigned short) (fourByteBuffer & 65535); // versionInfo & 0000 ... 0000 1111 1111 1111 1111
-        majorVersion = swapEndian16(majorVersion);
-        minorVersion = swapEndian16(minorVersion);
-    } else {
-        majorVersion = (unsigned short) (fourByteBuffer & 65535); // versionInfo & 0000 ... 0000 1111 1111 1111 1111
-        minorVersion = (unsigned short) (fourByteBuffer >> 16);
-    }*/
+
     minorVersion = read2B(inFile);
     majorVersion = read2B(inFile);
 
@@ -192,40 +182,31 @@ ClassFile::ClassFile(char *fileName) {
     access_flag = read2Brev(inFile);
     // todo figure out why this is little endian
     /*                      Get This Class                         */
-
     //todo figure out why this is little endian
     this_class = read2Brev(inFile);
     /*                      Get Super Class                         */
-
     //todo figure out why this is little endian
     super_class = read2Brev(inFile);
     /*                      Get Interfaces Count                         */
-
     interfaces_count = read2B(inFile);
-    std::cout << "Bytes remaining after parsing super class: " << bytesRemaining << std::endl;
-
     /*                      Get Interfaces[]                         */
-
     interfaces = (uint16_t *) malloc(interfaces_count * sizeof(uint16_t));
     for (int i = 0; i < interfaces_count; i++) {
-        *(interfaces + i) = read2B(inFile);
+        *(interfaces + i) = read2Brev(inFile);
     }
-
     /*                      Get Fields Count                         */
-    fields_count = read2B(inFile);
-
+    fields_count = read2Brev(inFile);
     /*                      Get Fields[]                         */
     fields = (struct Field *) malloc(sizeof(struct Field) * fields_count);
     for (int i = 0; i < fields_count; i++) {
         struct Field currentField = *(fields + i);
-        currentField.access_flags = read2B(inFile);
-        currentField.descriptor_index = read2B(inFile);
-        currentField.attribute_count = read2B(inFile);
+        currentField.access_flags = read2Brev(inFile);
+        currentField.descriptor_index = read2Brev(inFile);
+        currentField.attribute_count = read2Brev(inFile);
     }
     /*                      Get Methods Count                         */
     //todo why is method count also little endian?????????????????
     methods_count = read2Brev(inFile);
-
     /*                      Get Methods[]                         */
     methods = (struct Method *) malloc(methods_count * sizeof(struct Method));
     for (int i = 0; i < methods_count; i++) {
@@ -241,10 +222,8 @@ ClassFile::ClassFile(char *fileName) {
         current->attributes = new std::vector<void *>;
         for (int i = 0; i < current->attributes_count; i++) {
             twoByteBuffer = read2Brev(inFile);
-            std::cout << "Bytes remaining after getting attribute name: " << bytesRemaining << std::endl;
             /* Deal with attribute identification */
             std::string attributeName = (char *) (*((CONSTANT_Utf8_info *) constant_pool->at(twoByteBuffer))).bytes;
-            std::cout << "Attribute name is " << attributeName << std::endl;
 
 
 
@@ -270,7 +249,6 @@ ClassFile::ClassFile(char *fileName) {
 
                 read2Brev(inFile); //discard MSB of code_length
                 code_ptr->code_length = (uint32_t) read1B(inFile); //incorrect read
-                //std::cout << std::hex << (short) read1B(inFile); //discard LSB of code_length
                 code_ptr->code = (uint8_t *) malloc(code_ptr->code_length);
                 for (int j = 0; j <= code_ptr->code_length; j++) {
                     *(code_ptr->code + j) = (short) read1B(inFile);
@@ -286,7 +264,6 @@ ClassFile::ClassFile(char *fileName) {
                     (code_ptr->exceptionTable + j)->catch_type = read2Brev(inFile);
                 }
                 code_ptr->attribute_length = read2Brev(inFile);
-                std::cout << "Number of attributes possessed by code attribute: " << code_ptr->attribute_length << std::endl;
                 for (int j = 0; j < code_ptr->attribute_length; j++) {
                     std::cout << "name of attribute possessed by code attribute: " <<
                     (char *) (*((CONSTANT_Utf8_info *) constant_pool->at(read2Brev(inFile)))).bytes << std::endl;
@@ -572,7 +549,6 @@ void ClassFile::printFields(){
         printUTFEntry(current.descriptor_index);
         std::cout << "Has access flags:" << std::endl;
         printAccessTypes(current.access_flags);
-        //std::cout << "\n\tHas " << current.attribute_count << " attributes" << std::endl;
     }
 }
 
@@ -585,17 +561,14 @@ void ClassFile::printMethodBytecode(struct Method m){
     for (auto &codeAttr : *m.attributes){
         std::cout << "Code: (" << std::dec << ((code_attribute *) codeAttr)->code_length << " bytes)" << std::endl;
         for (int i = 0; i < ((code_attribute *) codeAttr)->code_length; i++) {
-            setCurrentInstruction((short) *(((code_attribute *) codeAttr)->code + i));
+            setCurrentInstruction((uint16_t) *(((code_attribute *) codeAttr)->code + i));
             if (currentInstruction.instrName != "") {
                 std::cout << std::dec << i << ": " << currentInstruction.instrName;
             }
             if (currentInstruction.numOperands == 2){
-                uint16_t operand = (short) *(((code_attribute *) codeAttr)->code + ++i) |
-                                   (short) *(((code_attribute *) codeAttr)->code + ++i);
+                uint16_t operand = (uint16_t) *(((code_attribute *) codeAttr)->code + ++i) |
+                                   (uint16_t) *(((code_attribute *) codeAttr)->code + ++i);
                 std::cout << std::dec << " #" << operand;
-                //std::cout << "\t//" << (char *) (*((CONSTANT_Utf8_info *) constant_pool->at(operand))).bytes;
-                //std::cout << "\t\\";
-                //printUTFEntry((*((CONSTANT_Class_info *)constant_pool->at(operand))).name_index);
             }
             std::cout << std::endl;
         }
